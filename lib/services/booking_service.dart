@@ -6,7 +6,7 @@ import '../models/review_model.dart';
 import 'dart:developer';
 
 class BookingService {
-  String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://127.0.0.1:8000';
+  String get baseUrl => dotenv.env['BACKEND_URL']!;
 
   Future<Booking?> createBookingByMobile(BookingCreateByMobile booking) async {
     final url = Uri.parse('$baseUrl/uber/booking/create-by-mobile');

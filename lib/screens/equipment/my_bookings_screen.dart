@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import '../../providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -28,8 +30,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   }
 
   void _checkAuth() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final mainUserPhone = userProvider.user?['mobile_number']?.toString();
+    final ownerPhone = AuthService().currentMobileNumber;
+
     setState(() {
-      _currentUserMobile = AuthService().currentMobileNumber;
+      _currentUserMobile = mainUserPhone ?? ownerPhone;
     });
   }
 

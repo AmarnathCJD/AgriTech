@@ -6,8 +6,8 @@ import 'providers/harvest_provider.dart';
 import 'services/auth_service.dart';
 import 'providers/chat_provider.dart';
 import 'providers/localization_provider.dart';
-
-import 'screens/login_screen.dart';
+import 'providers/user_provider.dart';
+import 'screens/login_screen.dart'; // Ensure this file exists
 import 'theme/app_theme.dart';
 
 import 'services/price_alert_service.dart';
@@ -28,6 +28,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => HarvestProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => LocalizationProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: const AgriTechApp(),
     ),

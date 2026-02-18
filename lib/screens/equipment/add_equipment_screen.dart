@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:provider/provider.dart';
+import '../../providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -59,7 +61,9 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
   Future<void> _submitEquipment() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final mobileNumber = AuthService().currentMobileNumber;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final mobileNumber = userProvider.user?['mobile_number']?.toString() ??
+        AuthService().currentMobileNumber;
     if (mobileNumber == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
