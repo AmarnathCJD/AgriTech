@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'feature_screens.dart';
 import 'additional_features_screen.dart';
 import 'package:provider/provider.dart';
@@ -25,12 +28,142 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? _weatherAlert;
+  bool _isWeatherLoading = false;
+  double? _lastLat, _lastLon;
+
   @override
   void initState() {
     super.initState();
+    final locProvider = context.read<LocationProvider>();
+    locProvider.addListener(_onLocationUpdate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LocationProvider>().fetchUserLocation();
+      locProvider.fetchUserLocation();
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<LocationProvider>().removeListener(_onLocationUpdate);
+    super.dispose();
+  }
+
+  void _onLocationUpdate() {
+    final locProvider = context.read<LocationProvider>();
+    final lat = locProvider.latitude;
+    final lon = locProvider.longitude;
+
+    if (lat != null && lon != null) {
+      // Refresh if location changed or not loaded
+      if (_weatherAlert == null || _lastLat != lat || _lastLon != lon) {
+        _lastLat = lat;
+        _lastLon = lon;
+        _fetchWeatherAlert(lat, lon);
+      }
+    }
+  }
+
+  Future<void> _fetchWeatherAlert(double lat, double lon) async {
+    setState(() => _isWeatherLoading = true);
+    try {
+      final url = Uri.parse(
+          'https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&hourly=weathercode,temperature_2m&forecast_days=3');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final hourly = data['hourly'];
+        final codes = hourly['weathercode'] as List;
+        final temps = hourly['temperature_2m'] as List;
+
+        int maxCode = 0;
+        double maxTemp = 0;
+
+        // Check next 48 hours for worst conditions
+        for (int i = 0; i < 48 && i < codes.length; i++) {
+          int code = (codes[i] as num).toInt();
+          if (code > maxCode) maxCode = code;
+
+          double t = (temps[i] as num).toDouble();
+          if (t > maxTemp) maxTemp = t;
+        }
+
+        String title = "Clear Sky";
+        String subtitle = "Perfect conditions for field work.";
+        Gradient gradient = const LinearGradient(
+            colors: [Color(0xFF2980B9), Color(0xFF6DD5FA)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight);
+        IconData icon = Icons.wb_sunny;
+
+        if (maxCode >= 95) {
+          title = "Thunderstorm Alert";
+          subtitle = "Avoid field work. Heavy lightning expected.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF232526), Color(0xFF414345)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.flash_on;
+        } else if (maxCode >= 51) {
+          title = "Rainfall Expected";
+          subtitle = "Probability of rain in next 48h. Check drainage.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.grain;
+        } else if (maxCode >= 45) {
+          title = "Fog Warning";
+          subtitle = "Low visibility expected.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF757F9A), Color(0xFFD7DDE8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.cloud;
+        } else if (maxCode >= 1) {
+          title = "Cloudy Skies";
+          subtitle = "Overcast. Moderate solar radiation.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF304352), Color(0xFFD7D2CC)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.cloud_queue;
+        } else {
+          // Clear Sky Logic
+          if (maxTemp > 35) {
+            title = "Extremely Sunny";
+            subtitle = "High heat stress possible. Irrigate frequently.";
+            gradient = const LinearGradient(
+                colors: [Color(0xFFf12711), Color(0xFFf5af19)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight);
+            icon = Icons.wb_sunny;
+          } else {
+            title = "Sunny & Clear";
+            subtitle = "Excellent conditions for harvesting.";
+            gradient = const LinearGradient(
+                colors: [Color(0xFFFF8008), Color(0xFFFFC837)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight);
+            icon = Icons.wb_sunny;
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _weatherAlert = {
+              "title": title,
+              "subtitle": subtitle,
+              "gradient": gradient,
+              "icon": icon
+            };
+            _isWeatherLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print("Weather Alert Error: $e");
+      if (mounted) setState(() => _isWeatherLoading = false);
+    }
   }
 
   void _showLocationDialog(BuildContext context) {
@@ -356,18 +489,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF1E3C72),
-                        Color(0xFF2A5298)
-                      ], // Deep Blue Gradient
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    gradient: _weatherAlert != null
+                        ? _weatherAlert!['gradient'] as Gradient
+                        : const LinearGradient(
+                            colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1E3C72).withOpacity(0.3),
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 12,
                         offset: const Offset(0, 8),
                       ),
@@ -380,104 +512,79 @@ class _HomeScreenState extends State<HomeScreen> {
                         right: -20,
                         top: -20,
                         child: Icon(
-                          Icons.cloud,
+                          _weatherAlert != null
+                              ? _weatherAlert!['icon']
+                              : Icons.cloud,
                           size: 150,
                           color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: -20,
-                        left: 20,
-                        child: Icon(
-                          Icons.water_drop,
-                          size: 80,
-                          color: Colors.white.withOpacity(0.05),
                         ),
                       ),
 
                       // Content
                       Padding(
                         padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
+                        child: _isWeatherLoading
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                    color: Colors.white))
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      const Icon(Icons.warning_amber_rounded,
-                                          color: Colors.amberAccent, size: 16),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        lang.t('critical_alert'),
-                                        style: GoogleFonts.dmSans(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                          letterSpacing: 1,
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                                Icons.warning_amber_rounded,
+                                                color: Colors.amberAccent,
+                                                size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              "48H FORECAST",
+                                              style: GoogleFonts.dmSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  "48 HRS",
-                                  style: GoogleFonts.dmSans(
-                                    color: Colors.white70,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _weatherAlert != null
+                                        ? _weatherAlert!['title']
+                                        : "Fetching Weather...",
+                                    style: GoogleFonts.playfairDisplay(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              lang.t('heavy_rain'),
-                              style: GoogleFonts.playfairDisplay(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              lang.t('rain_warning'),
-                              style: GoogleFonts.dmSans(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 14,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Divider(
-                                color: Colors.white.withOpacity(0.2),
-                                height: 1),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Text(
-                                  lang.t('tap_precautions'),
-                                  style: GoogleFonts.dmSans(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _weatherAlert != null
+                                        ? _weatherAlert!['subtitle']
+                                        : "Updating your local forecast...",
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 14,
+                                      height: 1.5,
+                                    ),
                                   ),
-                                ),
-                                const Spacer(),
-                                const Icon(Icons.arrow_forward,
-                                    color: Colors.white, size: 18),
-                              ],
-                            ),
-                          ],
-                        ),
+                                ],
+                              ),
                       ),
                     ],
                   ),
