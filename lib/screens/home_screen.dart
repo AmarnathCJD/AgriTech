@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
 import 'crop_planning_screen.dart';
 import '../services/location_service.dart';
+import 'equipment/equipment_listing_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
 import '../providers/localization_provider.dart';
@@ -221,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Section 2: Core Services (Grid)
                 Text(
-                  lang.t('smart_services'),
+                  "Smart Services",
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.grey[800],
@@ -238,8 +239,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildCreativeFeatureCard(
                       context,
-                      title: lang.t('market_intelligence'),
-                      subtitle: lang.t('live_prices'),
+                      title: "Market\nIntelligence",
+                      subtitle: "Live Prices",
                       icon: Icons.analytics_outlined,
                       // Rich Emerald Green
                       gradient: const LinearGradient(
@@ -252,8 +253,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
-                      title: lang.t('crop_planning'),
-                      subtitle: lang.t('ai_guide'),
+                      title: "Crop\nPlanning",
+                      subtitle: "AI Guide",
                       icon: Icons.grass_outlined,
                       // Deep Burnt Orange
                       gradient: const LinearGradient(
@@ -265,8 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
-                      title: lang.t('harvest_timing'),
-                      subtitle: lang.t('best_window'),
+                      title: "Harvest\nTiming",
+                      subtitle: "Best Window",
                       icon: Icons.timer_outlined,
                       // Midnight Blue
                       gradient: const LinearGradient(
@@ -278,8 +279,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
-                      title: lang.t('risk_calculator'),
-                      subtitle: lang.t('secure_farm'),
+                      title: "Risk\nCalculator",
+                      subtitle: "Secure Farm",
                       icon: Icons.shield_outlined,
                       // Dark Crimson
                       gradient: const LinearGradient(
@@ -291,8 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
-                      title: lang.t('equipment_sharing'),
-                      subtitle: lang.t('rentals'),
+                      title: "Equipment\nSharing",
+                      subtitle: "Rentals",
                       icon: Icons.agriculture_outlined,
                       // Dark Espresso Brown
                       gradient: const LinearGradient(
@@ -300,12 +301,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const EquipmentScreen())),
+                              builder: (_) => const EquipmentListingScreen())),
                     ),
                     _buildCreativeFeatureCard(
                       context,
-                      title: lang.t('more_services'),
-                      subtitle: lang.t('govt_schemes'),
+                      title: "More\nServices",
+                      subtitle: "Govt Schemes",
                       icon: Icons.grid_view,
                       // Deep Royal Purple
                       gradient: const LinearGradient(
