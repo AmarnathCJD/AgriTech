@@ -5,7 +5,10 @@ import 'providers/crop_planning_provider.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(
     MultiProvider(
       providers: [
