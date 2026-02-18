@@ -3,13 +3,14 @@ import 'package:provider/provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/crop_planning_provider.dart';
 import 'providers/harvest_provider.dart';
-import 'screens/login_screen.dart';
+import 'services/auth_service.dart';
+import 'screens/login_screen.dart'; // Ensure this file exists
 import 'theme/app_theme.dart';
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
+  await AuthService().init();
   runApp(
     MultiProvider(
       providers: [

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
+import '../../services/auth_service.dart';
+import '../auth/owner_login_screen.dart';
 import 'booking_screen.dart';
 import 'my_bookings_screen.dart';
 import 'add_equipment_screen.dart';
@@ -66,6 +68,16 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
     }
   }
 
+  void _navigateToAddEquipment() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddEquipmentScreen()),
+    );
+    if (result == true) {
+      _fetchEquipment();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,12 +103,18 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddEquipmentScreen()),
-          );
-          if (result == true) {
-            _fetchEquipment();
+          if (!AuthService().isLoggedIn) {
+            // Navigate to Login first
+            await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => OwnerLoginScreen(onLoginSuccess: () {
+                          Navigator.pop(context); // Close login screen
+                          // Proceed to Add Equipment
+                          _navigateToAddEquipment();
+                        })));
+          } else {
+            _navigateToAddEquipment();
           }
         },
         label: const Text("Add My Equipment"),

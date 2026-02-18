@@ -30,21 +30,26 @@ class BookingService {
     }
   }
 
-  Future<List<Booking>> fetchBookings() async {
-    // Current backend implementation lists ALL booked equipment.
-    // In a real app, this should filter by user.
-    // For now, we fetch all and maybe filter client-side if we knew the user ID.
-    final url = Uri.parse('$baseUrl/uber/booking/list-booked');
+  Future<List<Booking>> fetchBookings({String? mobileNumber}) async {
+    // If mobile number is provided, fetch specific user's rentals
+    final String endpoint = mobileNumber != null ? 'user' : 'list-booked';
+    final url = Uri.parse('$baseUrl/uber/booking/$endpoint');
 
     try {
-      final response = await http.get(url);
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (mobileNumber != null) {
+        headers['X-User-Phone'] = mobileNumber;
+      }
+
+      final response = await http.get(url, headers: headers);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.map((e) => Booking.fromJson(e)).toList();
       } else {
         log('Failed to load bookings: ${response.statusCode}');
-        throw Exception('Failed to load bookings');
+        // Return empty list instead of throwing to avoid UI crash
+        return [];
       }
     } catch (e) {
       log('Error fetching bookings: $e');
@@ -73,6 +78,39 @@ class BookingService {
       }
     } catch (e) {
       log('Error adding review: $e');
+      return false;
+    }
+  }
+
+  Future<List<Booking>> fetchIncomingBookings(String mobileNumber) async {
+    final url =
+        Uri.parse('$baseUrl/uber/booking/incoming?mobile_number=$mobileNumber');
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((e) => Booking.fromJson(e)).toList();
+      } else {
+        log('Failed to load incoming bookings: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      log('Error fetching incoming bookings: $e');
+      return [];
+    }
+  }
+
+  Future<bool> updateBookingStatus(
+      String bookingId, String status, String mobileNumber) async {
+    final url =
+        Uri.parse('$baseUrl/uber/booking/status/$bookingId?status=$status');
+    try {
+      final response =
+          await http.patch(url, headers: {'X-User-Phone': mobileNumber});
+      return response.statusCode == 200;
+    } catch (e) {
+      log('Error updating booking status: $e');
       return false;
     }
   }

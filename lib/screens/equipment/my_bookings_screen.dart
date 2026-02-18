@@ -4,6 +4,11 @@ import 'package:intl/intl.dart';
 import '../../models/booking_model.dart';
 import '../../services/booking_service.dart';
 import 'add_review_screen.dart';
+import 'my_listings_tab.dart';
+import 'incoming_requests_screen.dart';
+
+import '../../services/auth_service.dart';
+import '../auth/owner_login_screen.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -13,6 +18,101 @@ class MyBookingsScreen extends StatefulWidget {
 }
 
 class _MyBookingsScreenState extends State<MyBookingsScreen> {
+  // Mobile number handling
+  String? _currentUserMobile;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  void _checkAuth() {
+    setState(() {
+      _currentUserMobile = AuthService().currentMobileNumber;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F5F2),
+        appBar: AppBar(
+          title: const Text("My Activity"),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          bottom: const TabBar(
+            labelColor: Colors.brown,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Colors.brown,
+            tabs: [
+              Tab(text: "Rentals"),
+              Tab(text: "Listings"),
+              Tab(text: "Requests"),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // Tab 1: My Rentals (Bookings I made)
+            MyRentalsTab(mobileNumber: _currentUserMobile),
+
+            // Tab 2: My Listings (Equipment I own)
+            _currentUserMobile != null
+                ? MyListingsTab(mobileNumber: _currentUserMobile!)
+                : _buildLoginPrompt(),
+
+            // Tab 3: Incoming Requests (Bookings on my equipment)
+            _currentUserMobile != null
+                ? IncomingRequestsScreen(mobileNumber: _currentUserMobile!)
+                : _buildLoginPrompt(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginPrompt() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text("Please login to view this section"),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => OwnerLoginScreen(onLoginSuccess: () {
+                          Navigator.pop(context);
+                          _checkAuth(); // Refresh state
+                        })),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
+            child: const Text("Owner Login"),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class MyRentalsTab extends StatefulWidget {
+  final String? mobileNumber;
+  const MyRentalsTab({super.key, this.mobileNumber});
+
+  @override
+  State<MyRentalsTab> createState() => _MyRentalsTabState();
+}
+
+class _MyRentalsTabState extends State<MyRentalsTab> {
   final BookingService _bookingService = BookingService();
   List<Booking> _bookings = [];
   bool _isLoading = true;
@@ -24,7 +124,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   }
 
   Future<void> _fetchBookings() async {
-    final bookings = await _bookingService.fetchBookings();
+    if (widget.mobileNumber == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final bookings =
+        await _bookingService.fetchBookings(mobileNumber: widget.mobileNumber);
     if (mounted) {
       setState(() {
         _bookings = bookings;
@@ -35,31 +141,35 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5F2),
-      appBar: AppBar(
-        title: const Text("My Bookings"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _bookings.isEmpty
-              ? const Center(child: Text("No bookings found."))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _bookings.length,
-                  itemBuilder: (context, index) {
-                    final booking = _bookings[index];
-                    return _buildBookingCard(booking);
-                  },
-                ),
+    if (widget.mobileNumber == null) {
+      return const Center(child: Text("Please login to view rentals"));
+    }
+
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
+    return RefreshIndicator(
+      onRefresh: _fetchBookings,
+      child: _bookings.isEmpty
+          ? ListView(
+              children: const [
+                SizedBox(height: 100),
+                Center(child: Text("No rentals found.")),
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _bookings.length,
+              itemBuilder: (context, index) =>
+                  _buildBookingCard(_bookings[index]),
+            ),
     );
   }
 
   Widget _buildBookingCard(Booking booking) {
     final bool isCompleted = booking.status.toLowerCase() == 'completed';
+    final String displayId = booking.id.length >= 6
+        ? booking.id.substring(booking.id.length - 6)
+        : booking.id;
 
     return Card(
       elevation: 0,
@@ -77,7 +187,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Booking #${booking.id.substring(booking.id.length - 6)}",
+                  "Booking #$displayId",
                   style: GoogleFonts.dmSans(fontWeight: FontWeight.bold),
                 ),
                 Container(
@@ -118,7 +228,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            AddReviewScreen(bookingId: booking.id),
+                            AddReviewScreen(bookingId: booking.id!),
                       ),
                     );
                   },

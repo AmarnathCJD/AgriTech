@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
+import '../../services/auth_service.dart';
 
 class AddEquipmentScreen extends StatefulWidget {
   const AddEquipmentScreen({super.key});
@@ -15,7 +16,6 @@ class AddEquipmentScreen extends StatefulWidget {
 
 class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
   final _formKey = GlobalKey<FormState>();
-  final EquipmentService _equipmentService = EquipmentService();
 
   String _selectedType = 'Tractor';
   final List<String> _equipmentTypes = [
@@ -30,7 +30,6 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _hourlyPriceController = TextEditingController();
   final TextEditingController _dailyPriceController = TextEditingController();
-  final TextEditingController _mobileController = TextEditingController();
 
   File? _selectedImage;
   bool _isLoading = false;
@@ -60,6 +59,17 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
   Future<void> _submitEquipment() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final mobileNumber = AuthService().currentMobileNumber;
+    if (mobileNumber == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Session expired. Please login again.'),
+            backgroundColor: Colors.red),
+      );
+      Navigator.pop(context); // Or redirect to login
+      return;
+    }
+
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -86,26 +96,37 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
       locationLat: lat,
       locationLong: long,
       images: images,
-      mobileNumber: _mobileController.text.trim(),
+      mobileNumber: mobileNumber,
     );
 
-    final result = await _equipmentService.registerEquipment(equipment);
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Equipment added successfully!'),
-              backgroundColor: Colors.green),
-        );
-        Navigator.pop(context, true); // Return true to trigger refresh
+    try {
+      final success =
+          await EquipmentService().registerEquipmentByMobile(equipment);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Equipment added successfully!')),
+          );
+          Navigator.pop(context, true);
+        }
       } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Failed to add equipment'),
+                backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Failed to add equipment.'),
-              backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -115,57 +136,35 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Add My Equipment"),
+        title: Text(
+          "List My Equipment",
+          style: GoogleFonts.dmSans(
+            textStyle: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Equipment Details",
+              Text("Equipment Type",
                   style: GoogleFonts.dmSans(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  height: 150,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                    image: _selectedImage != null
-                        ? DecorationImage(
-                            image: FileImage(_selectedImage!),
-                            fit: BoxFit.cover)
-                        : null,
-                  ),
-                  child: _selectedImage == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_a_photo,
-                                size: 40, color: Colors.grey[600]),
-                            const SizedBox(height: 8),
-                            Text("Add Photo",
-                                style: GoogleFonts.dmSans(
-                                    color: Colors.grey[600])),
-                          ],
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 16),
+                      fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: "Equipment Type",
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  filled: true,
+                  fillColor: Colors.grey[100],
                 ),
                 items: _equipmentTypes.map((type) {
                   return DropdownMenuItem(value: type, child: Text(type));
@@ -173,63 +172,114 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
                 onChanged: (value) => setState(() => _selectedType = value!),
               ),
               const SizedBox(height: 16),
+
+              Text("Description",
+                  style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: "Description",
-                  hintText: "e.g. Mahindra 575 DI, 45HP, Good condition",
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: "Enter equipment details...",
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  filled: true,
+                  fillColor: Colors.grey[100],
                 ),
-                validator: (value) => value!.isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Please enter description' : null,
               ),
               const SizedBox(height: 16),
+
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      controller: _hourlyPriceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: "Hourly Price (₹)",
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Hourly Price (₹)",
+                            style: GoogleFonts.dmSans(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _hourlyPriceController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                          validator: (value) =>
+                              value!.isEmpty ? 'Required' : null,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: TextFormField(
-                      controller: _dailyPriceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: "Daily Price (₹)",
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Daily Price (₹)",
+                            style: GoogleFonts.dmSans(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _dailyPriceController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                          validator: (value) =>
+                              value!.isEmpty ? 'Required' : null,
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Text("Contact Information",
-                  style: GoogleFonts.dmSans(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _mobileController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: "Mobile Number",
-                  hintText: "Enter 10-digit mobile number",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
+
+              // Image Picker
+              Text("Upload Image",
+                  style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: _selectedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo,
+                                size: 40, color: Colors.grey[400]),
+                            const SizedBox(height: 8),
+                            Text("Tap to select image",
+                                style: TextStyle(color: Colors.grey[500])),
+                          ],
+                        ),
                 ),
-                validator: (value) => (value == null || value.length < 10)
-                    ? 'Valid mobile required'
-                    : null,
               ),
+
               const SizedBox(height: 32),
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -237,10 +287,15 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
                   onPressed: _isLoading ? null : _submitEquipment,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.brown,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Register Equipment"),
+                      : const Text("LIST EQUIPMENT",
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

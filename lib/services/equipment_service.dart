@@ -38,7 +38,7 @@ class EquipmentService {
     }
   }
 
-  Future<Equipment?> registerEquipment(
+  Future<bool> registerEquipmentByMobile(
       EquipmentCreateByMobile equipment) async {
     final url = Uri.parse('$baseUrl/uber/equipment/register-by-mobile');
     try {
@@ -49,14 +49,14 @@ class EquipmentService {
       );
 
       if (response.statusCode == 200) {
-        return Equipment.fromJson(json.decode(response.body));
+        return true;
       } else {
         log('Failed to register equipment: ${response.statusCode} - ${response.body}');
-        return null; // Or throw exception
+        return false;
       }
     } catch (e) {
       log('Error registering equipment: $e');
-      return null;
+      return false;
     }
   }
 
@@ -71,5 +71,35 @@ class EquipmentService {
       log('Error fetching equipment details: $e');
     }
     return null;
+  }
+
+  Future<List<Equipment>> fetchMyEquipment(String mobileNumber) async {
+    final url = Uri.parse(
+        '$baseUrl/uber/equipment/my-listings?mobile_number=$mobileNumber');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((e) => Equipment.fromJson(e)).toList();
+      } else {
+        log('Failed to load my equipment: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      log('Error fetching my equipment: $e');
+      return [];
+    }
+  }
+
+  Future<bool> deleteEquipment(String id, String mobileNumber) async {
+    final url =
+        Uri.parse('$baseUrl/uber/equipment/$id?mobile_number=$mobileNumber');
+    try {
+      final response = await http.delete(url);
+      return response.statusCode == 200;
+    } catch (e) {
+      log('Error deleting equipment: $e');
+      return false;
+    }
   }
 }
