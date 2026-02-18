@@ -1439,7 +1439,8 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
                                   size: 4, color: Colors.grey),
                               const SizedBox(width: 8),
                               Text(
-                                "Just Now", // Placeholder since we don't have time
+                                // "Just Now", // Placeholder since we don't have time
+                                "",
                                 style: GoogleFonts.dmSans(
                                   color: Colors.grey,
                                   fontSize: 11,

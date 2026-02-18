@@ -75,9 +75,9 @@ class MarketIntelligenceService {
   Future<List<StockMarketData>> fetchAgmarknetLive() async {
     try {
       const url1 =
-          "https://api.agmarknet.gov.in/v1/dashboard-data/?dashboard=marketwise_price_arrival&date=2026-02-18&group=[100000]&commodity=[100001]&variety=100021&state=100006&district=[100007]&market=[100009]&grades=[4]&limit=10&format=json";
+          "https://api.agmarknet.gov.in/v1/dashboard-data/?dashboard=marketwise_price_arrival&date=2026-02-18&group=[100000]&commodity=[100001]&variety=100021&state=17&district=[100007]&grades=[4]&limit=10&format=json";
       const url2 =
-          "https://api.agmarknet.gov.in/v1/dashboard-data/?commodity=%5B100001%5D&dashboard=marketwise_price_arrival&date=2026-02-18&district=%5B100007%5D&format=json&grades=%5B4%5D&group=%5B100000%5D&limit=10&market=%5B100009%5D&page=2&state=100006&variety=100021";
+          "https://api.agmarknet.gov.in/v1/dashboard-data/?commodity=%5B100001%5D&dashboard=marketwise_price_arrival&date=2026-02-18&district=%5B100007%5D&format=json&grades=%5B4%5D&group=%5B100000%5D&limit=10&page=2&state=17&variety=100021";
 
       final responses = await Future.wait(
           [_client.get(Uri.parse(url1)), _client.get(Uri.parse(url2))]);
@@ -321,9 +321,14 @@ class MarketIntelligenceService {
   String _getRandomHashtag() {
     // Use plain hashtags, Uri.https will handle encoding
     const tags = [
+      '#KeralaAgriculture',
+      '#KeralaFarmers',
+      '#CoconutFarming',
+      '#RubberPrice',
+      '#KeralaSpices',
+      '#VFPCK',
       '#Kisan',
       '#AgricultureIndia',
-      '#PMKisan',
       '#IndianFarmers',
       '#MSP',
       '#MandiPrice'
@@ -442,7 +447,7 @@ class MarketIntelligenceService {
           .join("\n");
 
       final prompt = """
-SYSTEM: You are an expert agricultural market advisor for Indian farmers. Analyze the following tweets about Indian agriculture and respond ONLY in valid JSON.
+SYSTEM: You are an expert agricultural market advisor for Kerala, India. Analyze the following tweets about Kerala agriculture and respond ONLY in valid JSON.
 JSON Fields required:
 - "label": Overall market sentiment (Bullish/Bearish/Neutral)
 - "score": Number 0-100 representing positive sentiment strength.
