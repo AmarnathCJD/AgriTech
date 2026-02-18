@@ -136,6 +136,7 @@ class CropPlanningProvider with ChangeNotifier {
         "land_size": landSize,
         "previous_yield": previousYield,
         "location": locProvider.currentLocation,
+        "target_crop": previousCrop, // Re-evaluate previous crop suitability
       };
 
       // 4. Call Gemini

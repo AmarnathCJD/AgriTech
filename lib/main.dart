@@ -4,6 +4,7 @@ import 'providers/location_provider.dart';
 import 'providers/crop_planning_provider.dart';
 import 'providers/harvest_provider.dart';
 import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
 import 'services/price_alert_service.dart';
@@ -38,7 +39,8 @@ class AgriTechApp extends StatelessWidget {
       title: 'Farmora',
       debugShowCheckedModeBanner: false,
       theme: AgriTheme.themeData,
-      home: const LoginScreen(),
+      // home: const LoginScreen(),
+      home: const HomeScreen(),
     );
   }
 }

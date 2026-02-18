@@ -58,6 +58,10 @@ Return STRICT JSON in this format:
 }
 ''';
 
+      print("--- GENERATED GEMINI PROMPT ---");
+      _printLog(prompt);
+      print("-------------------------------");
+
       final content = [Content.text(prompt)];
       final response = await model.generateContent(content);
 
@@ -74,46 +78,105 @@ Return STRICT JSON in this format:
     }
   }
 
+  void _printLog(String text) {
+    final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
+    pattern.allMatches(text).forEach((match) => print(match.group(0)));
+  }
+
   // Restored method for CropPlanningProvider
-  Future<Map<String, dynamic>?> checkCropFeasibility(
-      Map<String, dynamic> userInputs,
-      Map<String, dynamic> weatherSummary,
-      Map<String, dynamic> marketSummary,
-      List<dynamic> cropDataset) async {
+  Future<Map<String, dynamic>> checkCropFeasibility(
+    Map<String, dynamic> userInputs,
+    Map<String, dynamic> weatherSummary,
+    Map<String, dynamic> districtMarketData,
+    List<dynamic> cropDataset,
+  ) async {
     try {
       final apiKey = dotenv.env['GEMINI_API_KEY'];
-      if (apiKey == null || apiKey.isEmpty) return null;
-
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception("GEMINI_API_KEY is missing");
+      }
       final model = GenerativeModel(model: _modelName, apiKey: apiKey);
 
-      final prompt = '''
-You are an expert agronomist. Analyze the following data to recommend the best crops.
+      final prompt = _buildPrompt(
+          userInputs, weatherSummary, districtMarketData, cropDataset);
 
-User Inputs: $userInputs
-Weather: $weatherSummary
-Market: $marketSummary
-Available Crops to consider: ${cropDataset.map((e) => e['crop_name']).join(', ')}
+      print("--- GENERATED GEMINI PROMPT ---");
+      _printLog(prompt);
+      print("-------------------------------");
 
-Provide a feasibility report in JSON format:
-{
-  "best_crop": "Name",
-  "confidence": "High/Medium/Low",
-  "reasoning": "...",
-  "risks": "..."
-}
-''';
       final content = [Content.text(prompt)];
       final response = await model.generateContent(content);
 
-      if (response.text == null) return null;
+      if (response.text == null) {
+        throw Exception("Empty response from AI");
+      }
 
-      // Basic cleanup
-      String clean =
+      print("Gemini Response: ${response.text}"); // Debug log
+
+      // Parse JSON response
+      // Remove any markdown code block syntax if present
+      String cleanText =
           response.text!.replaceAll('```json', '').replaceAll('```', '').trim();
-      return json.decode(clean);
+      final jsonResponse = jsonDecode(cleanText);
+      return jsonResponse;
     } catch (e) {
       if (kDebugMode) print("Gemini Planning Error: $e");
-      return null;
+      throw Exception("Failed to generate crop plan: $e");
     }
+  }
+
+  String _buildPrompt(
+    Map<String, dynamic> inputs,
+    Map<String, dynamic> weather,
+    Map<String, dynamic> market,
+    List<dynamic> crops,
+  ) {
+    return """
+    You are an expert agronomist advisor for Indian farmers. 
+    Analyze the following data and recommend the top 3 most suitable crops.
+
+    # FARM DATA:
+    - Location: ${inputs['location'] ?? 'Unknown'}
+    - Soil Type: ${inputs['soil_type']}
+    - Soil pH: ${inputs['soil_ph'] ?? 'N/A'}
+    - Land Size: ${inputs['land_size']} acres
+    - Irrigation Available: ${inputs['irrigation']}
+    - Previous Crop: ${inputs['previous_crop']}
+
+    # WEATHER FORECAST (Next 14 Days):
+    - Avg Temp: ${weather['avg_temp']}
+    - Total Rainfall: ${weather['total_rainfall_mm']}mm
+
+    # MARKET TRENDS (Current District Prices):
+    ${jsonEncode(market['commodities'])}
+
+    # AVAILABLE CROP DATASET (JSON):
+    ${jsonEncode(crops.take(15).toList())} 
+    (Note: This is a subset of local crops. You may recommend others if highly suitable but prioritize these if they fit.)
+
+    # TASK:
+    1. The user's previous crop was "${inputs['target_crop'] ?? 'None'}". Evaluate if it is suitable to plant AGAIN in the upcoming season. Include it in the list with a recommendation.
+    2. Recommend 2-3 other most suitable crops based on soil, season, and market trends.
+    3. Generate a 'suitability_score_percent' (0-100) for each.
+    4. Provide specific risk warnings if risk > 30%.
+
+    # OUTPUT FORMAT (Strict JSON):
+    {
+      "recommendations": [
+        {
+          "crop_name": "Name",
+          "suitability_score_percent": 90,
+          "climate_compatibility_percent": 85,
+          "market_momentum_percent": 80,
+          "yield_potential_percent": 95,
+          "risk_percent": 10,
+          "risk_reason": "High humidity may cause fungal issues.",
+          "harvest_duration_days": 120,
+          "summary_reasoning": "Detailed explanation...",
+          "recommendation": "Highly Recommended"
+        }
+      ]
+    }
+    """;
   }
 }
