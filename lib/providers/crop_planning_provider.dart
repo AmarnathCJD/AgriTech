@@ -148,4 +148,10 @@ class CropPlanningProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void resetPlan() {
+    _aiResults = null;
+    _error = null;
+    notifyListeners();
+  }
 }

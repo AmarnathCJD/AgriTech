@@ -192,25 +192,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
           left: 24,
           child: ElevatedButton.icon(
             onPressed: () {
-              // Reset to form
-              // Implementation detail: we need a clear method or handle in provider
-              // For now, toggle a flag or just reload
-              // But provider state reset is better.
-              // Actually, just back navigation or specific reset method.
-              // Let's assume a reset method in provider or just popping if this was pushed.
-              // Since we are replacing the body, we need a reset method.
-              // For now, let's just create a quick clear in provider?
-              // Check provider code: it resets _aiResults to null on generate.
-              // We can expose a clear method.
-              // For now, I will assume the button just regenerates or we add a reset
-              // Let's add a reset call.
-              // Accessing private setters? No, we need a reset method.
-              // I will trigger a rebuild by setting _aiResults to null via a new method or hack?
-              // I'll add a 'reset()' method to provider in next step if needed,
-              // OR just pop this screen if it was pushed?
-              // It is pushed. So popping is fine? No, the state is in provider.
-              // If provider is unscoped (global), state persists.
-              // Better to have a 'startNewPlan' method.
+              context.read<CropPlanningProvider>().resetPlan();
             },
             icon: const Icon(Icons.refresh),
             label: const Text("START NEW PLAN"),
