@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
 import 'crop_planning_screen.dart';
 import '../services/location_service.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -142,10 +143,16 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 8),
           Container(
             margin: const EdgeInsets.only(right: 16),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.person, color: Colors.white, size: 22),
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              ),
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           ),
         ],
@@ -438,6 +445,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
+        onDestinationSelected: (index) {
+          if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          }
+        },
         backgroundColor: Colors.white,
         elevation: 10,
         destinations: const [
