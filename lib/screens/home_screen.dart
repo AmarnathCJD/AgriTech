@@ -297,19 +297,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
-                      title: "Agri\nStore",
-                      subtitle: "Buy Products",
-                      icon: Icons.store_mall_directory_outlined,
-                      // Indigio/Purple Gradient
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF4A148C), Color(0xFF7B1FA2)]),
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const StoreScreen())),
-                    ),
-                    _buildCreativeFeatureCard(
-                      context,
                       title: "Equipment\nSharing",
                       subtitle: "Rentals",
                       icon: Icons.agriculture_outlined,
