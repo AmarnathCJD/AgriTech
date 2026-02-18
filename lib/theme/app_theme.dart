@@ -97,31 +97,35 @@ class AgriTheme {
 
     cardTheme: CardThemeData(
       color: _surface,
-      elevation: 0, // Flat design with border
+      elevation: 2, // Slight elevation for depth
+      shadowColor: _primary.withOpacity(0.1),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: _secondary.withOpacity(0.1), width: 1),
+        borderRadius: BorderRadius.circular(
+            12), // Slightly less rounded for "professional" look
+        side: BorderSide(color: _secondary.withOpacity(0.2), width: 1),
       ),
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.zero, // Remove default margin hindrance
+      clipBehavior: Clip.antiAlias,
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: _surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: _secondary.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: _secondary.withOpacity(0.3)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: _secondary.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: _secondary.withOpacity(0.3)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _primary, width: 2),
       ),
-      hintStyle: GoogleFonts.dmSans(color: Colors.grey[400]),
+      labelStyle: TextStyle(color: _textSecondary, fontWeight: FontWeight.w500),
+      hintStyle: GoogleFonts.dmSans(color: Colors.grey[500]),
     ),
   );
 }
