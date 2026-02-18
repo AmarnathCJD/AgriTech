@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/crop_planning_provider.dart';
 import 'providers/harvest_provider.dart';
+import 'services/auth_service.dart';
 import 'providers/chat_provider.dart';
 import 'providers/localization_provider.dart';
 import 'providers/user_provider.dart';
-import 'screens/login_screen.dart';
+import 'screens/login_screen.dart'; // Ensure this file exists
 import 'theme/app_theme.dart';
 
 import 'services/price_alert_service.dart';
@@ -18,6 +19,7 @@ Future<void> main() async {
 
   await PriceAlertService().init();
 
+  await AuthService().init();
   runApp(
     MultiProvider(
       providers: [
