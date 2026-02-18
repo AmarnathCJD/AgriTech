@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'widgets/chat_floating_button.dart';
+import 'government_schemes_screen.dart';
 
 class AdditionalFeaturesScreen extends StatelessWidget {
   const AdditionalFeaturesScreen({super.key});
@@ -32,6 +33,11 @@ class AdditionalFeaturesScreen extends StatelessWidget {
             "Subsidy alerts & application support",
             Icons.account_balance_rounded,
             Colors.blueGrey,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const GovernmentSchemesScreen()),
+            ),
           ),
           _buildFeatureTile(
             context,
@@ -61,7 +67,8 @@ class AdditionalFeaturesScreen extends StatelessWidget {
   }
 
   Widget _buildFeatureTile(BuildContext context, String title, String subtitle,
-      IconData icon, Color color) {
+      IconData icon, Color color,
+      {VoidCallback? onTap}) {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 16),
@@ -99,11 +106,12 @@ class AdditionalFeaturesScreen extends StatelessWidget {
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded,
             size: 16, color: Colors.grey),
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Opening $title... (Demo)")),
-          );
-        },
+        onTap: onTap ??
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Opening $title... (Demo)")),
+              );
+            },
       ),
     );
   }

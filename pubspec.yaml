@@ -38,5 +38,6 @@ flutter:
 
   assets:
     - lib/assets/data/crops.json
+    - lib/assets/data/government_schemes.json
     - .env
 
