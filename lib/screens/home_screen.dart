@@ -73,102 +73,100 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Section 1: Market Ticker (Vital Info)
+            const SizedBox(height: 2),
+            _buildMarketTicker(context),
+            const SizedBox(height: 24),
+
+            // Section 2: Core Services (Grid)
             Text(
-              "Mandi Prices (Live)",
+              "Smart Services",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.grey[800],
                   ),
             ),
             const SizedBox(height: 12),
-            _buildMarketTicker(context),
-            const SizedBox(height: 24),
-
-            // Section 2: Core Services (Grid)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Smart Services",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                ),
-                TextButton(onPressed: () {}, child: const Text("View All")),
-              ],
-            ),
-            const SizedBox(height: 8),
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.1, // Slightly wider for better text fit
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.9,
               children: [
-                _buildFeatureCard(
+                _buildCreativeFeatureCard(
                   context,
                   title: "Market\nIntelligence",
-                  subtitle: "Prices & Trends",
+                  subtitle: "Live Prices",
                   icon: Icons.analytics_outlined,
-                  color: const Color(0xFF2E7D32), // Green
+                  // Rich Emerald Green
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)]),
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (_) => const MarketIntelligenceScreen())),
                 ),
-                _buildFeatureCard(
+                _buildCreativeFeatureCard(
                   context,
                   title: "Crop\nPlanning",
-                  subtitle: "AI Recommendations",
+                  subtitle: "AI Guide",
                   icon: Icons.grass_outlined,
-                  color: const Color(0xFFF57F17), // Amber/Orange
+                  // Deep Burnt Orange
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFFBF360C), Color(0xFFE65100)]),
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (_) => const CropPlanningScreen())),
                 ),
-                _buildFeatureCard(
+                _buildCreativeFeatureCard(
                   context,
                   title: "Harvest\nTiming",
-                  subtitle: "Best time to cut",
+                  subtitle: "Best Window",
                   icon: Icons.timer_outlined,
-                  color: const Color(0xFF00838F), // Cyan
+                  // Midnight Blue
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF00363A), Color(0xFF006064)]),
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (_) => const HarvestTimingScreen())),
                 ),
-                _buildFeatureCard(
+                _buildCreativeFeatureCard(
                   context,
                   title: "Risk\nCalculator",
-                  subtitle: "Insurance & Safety",
+                  subtitle: "Secure Farm",
                   icon: Icons.shield_outlined,
-                  color: const Color(0xFFC62828), // Red
+                  // Dark Crimson
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF880E4F), Color(0xFFC2185B)]),
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (_) => const RiskCalculatorScreen())),
                 ),
-                _buildFeatureCard(
+                _buildCreativeFeatureCard(
                   context,
                   title: "Equipment\nSharing",
-                  subtitle: "Rent Tractors",
+                  subtitle: "Rentals",
                   icon: Icons.agriculture_outlined,
-                  color: const Color(0xFF5D4037), // Brown
+                  // Dark Espresso Brown
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF3E2723), Color(0xFF5D4037)]),
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (_) => const EquipmentScreen())),
                 ),
-                _buildFeatureCard(
+                _buildCreativeFeatureCard(
                   context,
                   title: "More\nServices",
-                  subtitle: "Govt Schemes & More",
+                  subtitle: "Govt Schemes",
                   icon: Icons.grid_view,
-                  color: const Color(0xFF4527A0), // Purple
+                  // Deep Royal Purple
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF311B92), Color(0xFF4527A0)]),
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -179,7 +177,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Section 3: Daily Insight / Advisory
             // Section 3: Smart Advisory / Weather Insight
             Container(
               width: double.infinity,
@@ -329,119 +326,177 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMarketTicker(BuildContext context) {
-    return Container(
-      height: 90,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
+    return SizedBox(
+      height: 110,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        clipBehavior: Clip.none, // Allow shadows to show
         children: [
-          _buildTickerItem("Wheat", "₹2,100", "+2.5%", true),
-          const VerticalDivider(indent: 10, endIndent: 10),
-          _buildTickerItem("Rice", "₹1,950", "0%", false),
-          const VerticalDivider(indent: 10, endIndent: 10),
-          _buildTickerItem("Mustard", "₹4,800", "-1.2%", false, isDown: true),
-          const VerticalDivider(indent: 10, endIndent: 10),
-          _buildTickerItem("Cotton", "₹6,200", "+0.8%", true),
+          _buildPriceCard("Wheat", "₹2,100", "+2.5%", true),
+          const SizedBox(width: 12),
+          _buildPriceCard("Rice", "₹1,950", "0%", false),
+          const SizedBox(width: 12),
+          _buildPriceCard("Mustard", "₹4,800", "-1.2%", false, isDown: true),
+          const SizedBox(width: 12),
+          _buildPriceCard("Cotton", "₹6,200", "+0.8%", true),
+          const SizedBox(width: 12),
+          _buildPriceCard("Soybean", "₹3,400", "+1.5%", true),
         ],
       ),
-    ).animate().fadeIn(duration: 600.ms);
+    );
   }
 
-  Widget _buildTickerItem(String crop, String price, String change, bool isUp,
+  Widget _buildPriceCard(String crop, String price, String change, bool isUp,
       {bool isDown = false}) {
     final color = isUp
-        ? Colors.green[700]
-        : (isDown ? Colors.red[700] : Colors.grey[700]);
+        ? Colors.green[700]!
+        : (isDown ? Colors.red[700]! : Colors.grey[700]!);
+    final bgColor = isUp
+        ? Colors.green[50]!
+        : (isDown ? Colors.red[50]! : Colors.grey[100]!);
     final icon = isUp
-        ? Icons.arrow_drop_up
-        : (isDown ? Icons.arrow_drop_down : Icons.remove);
+        ? Icons.trending_up
+        : (isDown ? Icons.trending_down : Icons.remove);
 
     return Container(
-      width: 100,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      width: 140,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(crop,
-              style: GoogleFonts.dmSans(
-                  color: Colors.grey[600],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(crop,
+                  style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                      fontSize: 14)),
+              Icon(icon, color: color, size: 16),
+            ],
+          ),
           Text(price,
               style: GoogleFonts.dmSans(
-                  color: Colors.black87,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          Row(
-            children: [
-              Icon(icon, color: color, size: 18),
-              Text(change,
-                  style: GoogleFonts.dmSans(
-                      color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-            ],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.black87)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              change,
+              style: GoogleFonts.dmSans(
+                  color: color, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureCard(
+  Widget _buildCreativeFeatureCard(
     BuildContext context, {
     required String title,
     required String subtitle,
     required IconData icon,
-    required Color color,
+    required Gradient gradient,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08), // Softer shadow
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onTap,
+          child: Stack(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const Spacer(),
-              Text(
-                title,
-                style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
-                  color: Colors.grey[900],
+              // Decorative Background Icon (Faded)
+              Positioned(
+                right: -10,
+                bottom: -10,
+                child: Icon(
+                  icon,
+                  size: 80,
+                  color: Colors.white.withOpacity(0.1), // Reduced opacity
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  color: Colors.grey[500],
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Top Icon
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.2), width: 1),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 24),
+                    ),
+
+                    const Spacer(),
+
+                    // Text
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            height: 1.1,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            color: Colors.white
+                                .withOpacity(0.9), // Slightly clearer
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
