@@ -180,36 +180,129 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Section 3: Daily Insight / Advisory
+            // Section 3: Smart Advisory / Weather Insight
             Container(
-              padding: const EdgeInsets.all(16),
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF1E3C72),
+                    Color(0xFF2A5298)
+                  ], // Deep Blue Gradient
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.blue.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4)),
+                    color: const Color(0xFF1E3C72).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 8),
+                  ),
                 ],
               ),
-              child: Row(
+              child: Stack(
                 children: [
-                  const Icon(Icons.wb_cloudy_outlined,
-                      size: 32, color: Colors.blueAccent),
-                  const SizedBox(width: 16),
-                  Expanded(
+                  // Background Pattern (Decorative)
+                  Positioned(
+                    right: -20,
+                    top: -20,
+                    child: Icon(
+                      Icons.cloud,
+                      size: 150,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -20,
+                    left: 20,
+                    child: Icon(
+                      Icons.water_drop,
+                      size: 80,
+                      color: Colors.white.withOpacity(0.05),
+                    ),
+                  ),
+
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Monsoon Alert",
-                            style: GoogleFonts.dmSans(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.warning_amber_rounded,
+                                      color: Colors.amberAccent, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "CRITICAL ALERT",
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              "48 HRS",
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
                         Text(
-                            "Heavy rains expected in 48hrs. Secure your harvest.",
-                            style: GoogleFonts.dmSans(
-                                color: Colors.grey[700], fontSize: 14)),
+                          "Heavy Rainfall Expected",
+                          style: GoogleFonts.playfairDisplay(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Secure your harvested crops and check drainage systems immediately.",
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Divider(
+                            color: Colors.white.withOpacity(0.2), height: 1),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Text(
+                              "Tap for precautions",
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Icon(Icons.arrow_forward,
+                                color: Colors.white, size: 18),
+                          ],
+                        ),
                       ],
                     ),
                   ),

@@ -9,7 +9,13 @@ class MarketIntelligenceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Market Intelligence")),
+      backgroundColor: const Color(0xFFF8F5F2),
+      appBar: AppBar(
+        title: const Text("Market Intelligence"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -49,21 +55,29 @@ class MarketIntelligenceScreen extends StatelessWidget {
   Widget _buildMarketCard(
       String crop, String price, String change, Color color) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+      ),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withOpacity(0.1),
           child: Icon(Icons.grass, color: color),
         ),
-        title: Text(crop, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("Mandi: Azadpur, Delhi"),
+        title:
+            Text(crop, style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
+        subtitle: const Text("Mandi: Azadpur, Delhi"),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(price,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text(change, style: TextStyle(color: color, fontSize: 12)),
+                style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(change,
+                style: TextStyle(
+                    color: color, fontSize: 12, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -78,7 +92,12 @@ class CropPlanningScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("AI Crop Planner")),
+      backgroundColor: const Color(0xFFF8F5F2),
+      appBar: AppBar(
+          title: const Text("AI Crop Planner"),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -86,22 +105,27 @@ class CropPlanningScreen extends StatelessWidget {
           children: [
             Card(
               color: Theme.of(context).colorScheme.primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
                     const Icon(Icons.hub_rounded,
                         color: Colors.white, size: 40),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Analyzing Soil Data...",
-                      style: TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 16),
                     Text(
-                      "Based on N-P-K values and 15-day rain forecast",
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.8), fontSize: 12),
+                      "Analyzing Soil Data...",
+                      style: GoogleFonts.dmSans(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Using N-P-K values & Rainfall Forecast",
+                      style: GoogleFonts.dmSans(
+                          color: Colors.white70, fontSize: 14),
                     ),
                   ],
                 ),
@@ -109,7 +133,10 @@ class CropPlanningScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text("Recommended Crops",
-                style: Theme.of(context).textTheme.titleLarge),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Expanded(
               child: ListView(
@@ -132,19 +159,23 @@ class CropPlanningScreen extends StatelessWidget {
   Widget _buildRecommendationCard(
       String crop, String match, String tag, Color color) {
     return Card(
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.grey.withOpacity(0.2))),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
             Container(
-              width: 60,
-              height: 60,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.eco, color: color, size: 30),
+              child: Icon(Icons.eco, color: color, size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -152,7 +183,7 @@ class CropPlanningScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(crop,
-                      style: const TextStyle(
+                      style: GoogleFonts.dmSans(
                           fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Row(
@@ -165,14 +196,14 @@ class CropPlanningScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(match,
-                            style: const TextStyle(
+                            style: GoogleFonts.dmSans(
                                 color: Colors.green,
-                                fontSize: 10,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 8),
                       Text(tag,
-                          style: const TextStyle(
+                          style: GoogleFonts.dmSans(
                               color: Colors.grey, fontSize: 12)),
                     ],
                   ),
@@ -195,7 +226,12 @@ class HarvestTimingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Harvest Timing")),
+      backgroundColor: const Color(0xFFF8F5F2),
+      appBar: AppBar(
+          title: const Text("Harvest Timing"),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -206,23 +242,29 @@ class HarvestTimingScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text("Nov 15 - Nov 20",
-                style: Theme.of(context).textTheme.displayMedium),
-            const SizedBox(height: 24),
+                style: GoogleFonts.playfairDisplay(
+                    fontSize: 32, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 32),
             Container(
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.symmetric(horizontal: 32),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.blue.withOpacity(0.05), blurRadius: 10)
+                ],
               ),
               child: Row(
-                children: const [
-                  Icon(Icons.info_outline, color: Colors.blue),
-                  SizedBox(width: 16),
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.blue),
+                  const SizedBox(width: 16),
                   Expanded(
                       child: Text(
-                          "Rain expected on Nov 22. Better to harvest early.")),
+                          "Rain expected on Nov 22. Better to harvest early.",
+                          style: GoogleFonts.dmSans())),
                 ],
               ),
             ),
@@ -240,30 +282,41 @@ class RiskCalculatorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Risk & Insurance")),
+      backgroundColor: const Color(0xFFF8F5F2),
+      appBar: AppBar(
+          title: const Text("Risk & Insurance"),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Card(
-              color: Colors.redAccent.withOpacity(0.1),
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.redAccent.withOpacity(0.2))),
               elevation: 0,
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
                 child: Column(
                   children: [
-                    const Text("Farm Risk Score",
-                        style: TextStyle(fontSize: 16)),
+                    Text("Farm Risk Score",
+                        style: GoogleFonts.dmSans(
+                            fontSize: 16, color: Colors.grey[700])),
                     const SizedBox(height: 8),
-                    const Text("7.2 / 10",
-                        style: TextStyle(
+                    Text("7.2 / 10",
+                        style: GoogleFonts.playfairDisplay(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
                             color: Colors.redAccent)),
                     const SizedBox(height: 8),
-                    const Text("High Risk (Flood Prone)",
-                        style: TextStyle(color: Colors.redAccent)),
+                    Text("High Risk (Flood Prone)",
+                        style: GoogleFonts.dmSans(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -282,17 +335,30 @@ class RiskCalculatorScreen extends StatelessWidget {
 
   Widget _buildInsuranceCard(String name, String premium, String cover) {
     return Card(
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.grey.withOpacity(0.2))),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
-        leading: const Icon(Icons.security, size: 32, color: Colors.blueGrey),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+              color: Colors.blueGrey[50],
+              borderRadius: BorderRadius.circular(8)),
+          child: const Icon(Icons.security, size: 28, color: Colors.blueGrey),
+        ),
+        title:
+            Text(name, style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text(premium),
-            Text(cover, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(premium, style: GoogleFonts.dmSans(fontSize: 13)),
+            Text(cover,
+                style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.bold, color: Colors.black87)),
           ],
         ),
         trailing: ElevatedButton(
@@ -300,8 +366,10 @@ class RiskCalculatorScreen extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             minimumSize: Size.zero,
+            backgroundColor: Colors.blueGrey,
+            elevation: 0,
           ),
-          child: const Text("Apply"),
+          child: const Text("Apply", style: TextStyle(fontSize: 12)),
         ),
       ),
     );
@@ -315,11 +383,17 @@ class EquipmentScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Equipment Sharing")),
+      backgroundColor: const Color(0xFFF8F5F2),
+      appBar: AppBar(
+          title: const Text("Equipment Sharing"),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {},
         label: const Text("Rent Out My Tractor"),
         icon: const Icon(Icons.add),
+        backgroundColor: Colors.brown,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -328,8 +402,12 @@ class EquipmentScreen extends StatelessWidget {
             decoration: InputDecoration(
               hintText: "Search tractors, harvesters...",
               prefixIcon: const Icon(Icons.search),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
           ),
           const SizedBox(height: 16),
@@ -344,17 +422,22 @@ class EquipmentScreen extends StatelessWidget {
   Widget _buildTractorCard(
       String name, String dist, String price, double rating) {
     return Card(
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.grey.withOpacity(0.2))),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           Container(
-            height: 120,
-            color: Colors.grey[300],
+            height: 140,
+            color: Colors.grey[200],
             child: const Center(
                 child: Icon(Icons.agriculture, size: 64, color: Colors.grey)),
           ),
-          Padding(
+          Container(
+            color: Colors.white,
             padding: const EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -363,23 +446,25 @@ class EquipmentScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name,
-                        style: const TextStyle(
+                        style: GoogleFonts.dmSans(
                             fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text(dist, style: const TextStyle(color: Colors.grey)),
+                    Text(dist, style: GoogleFonts.dmSans(color: Colors.grey)),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(price,
-                        style: const TextStyle(
+                        style: GoogleFonts.dmSans(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green)),
+                            color: Colors.green[700])),
                     Row(
                       children: [
                         const Icon(Icons.star, size: 16, color: Colors.amber),
-                        Text(rating.toString()),
+                        Text(rating.toString(),
+                            style: GoogleFonts.dmSans(
+                                fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -398,10 +483,11 @@ Widget _buildSectionHeader(BuildContext context, String title) {
     padding: const EdgeInsets.only(bottom: 12.0),
     child: Text(
       title,
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(fontWeight: FontWeight.bold),
+      style: GoogleFonts.dmSans(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.grey[800],
+      ),
     ),
   );
 }

@@ -8,7 +8,13 @@ class AdditionalFeaturesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("More Services")),
+      backgroundColor: const Color(0xFFF8F5F2),
+      appBar: AppBar(
+        title: const Text("More Services"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -55,7 +61,12 @@ class AdditionalFeaturesScreen extends StatelessWidget {
   Widget _buildFeatureTile(BuildContext context, String title, String subtitle,
       IconData icon, Color color) {
     return Card(
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+      ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: Container(
@@ -71,7 +82,7 @@ class AdditionalFeaturesScreen extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Colors.grey[900],
           ),
         ),
         subtitle: Padding(
@@ -87,7 +98,6 @@ class AdditionalFeaturesScreen extends StatelessWidget {
         trailing: const Icon(Icons.arrow_forward_ios_rounded,
             size: 16, color: Colors.grey),
         onTap: () {
-          // Placeholder action
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Opening $title... (Demo)")),
           );

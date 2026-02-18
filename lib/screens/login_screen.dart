@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 import '../services/mock_backend.dart';
@@ -14,8 +15,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _mobileController = TextEditingController();
-  final _otpController =
-      TextEditingController(); // Only shown after sending OTP
+  final _otpController = TextEditingController();
   bool _otpSent = false;
   bool _isLoading = false;
 
@@ -23,18 +23,14 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     if (!_otpSent) {
-      // Simulate sending OTP
       await Future.delayed(const Duration(seconds: 1));
       setState(() {
         _otpSent = true;
         _isLoading = false;
       });
     } else {
-      // Verify OTP
-      final success = await MockBackend().login(
-        _mobileController.text,
-        _otpController.text,
-      );
+      final success = await MockBackend()
+          .login(_mobileController.text, _otpController.text);
       if (success && mounted) {
         Navigator.pushReplacement(
           context,
@@ -48,117 +44,155 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Professional Login Screen
     return Scaffold(
-      body: Stack(
+      backgroundColor: Colors.white,
+      body: Row(
         children: [
-          // Background Pattern (Subtle)
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.05,
-              child: Image.network(
-                'https://images.unsplash.com/photo-1625246333195-9818e0f20417?q=80&w=1000&auto=format&fit=crop', // Abstract field texture
-                fit: BoxFit.cover,
-                errorBuilder: (c, e, s) =>
-                    Container(color: Colors.grey[200]), // Fallback
-              ),
-            ),
-          ),
-
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo / Branding Area
-                  Icon(
-                    Icons.agriculture_rounded,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
-                  ).animate().scale(
-                        duration: 600.ms,
-                        curve: Curves.easeOutBack,
+          // Left Side: Branding / Image (Hidden on small screens if desired, but good for Tablet/Web)
+          // For mobile, we just stack or remove. Let's assume mobile-first for farmers.
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Logo Area
+                    Container(
+                      height: 120,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.1),
+                        shape: BoxShape.circle,
                       ),
+                      child: Icon(Icons.agriculture_rounded,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.primary),
+                    )
+                        .animate()
+                        .scale(duration: 600.ms, curve: Curves.easeOutBack),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  Text(
-                    "Farmora",
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.displayLarge,
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+                    Text(
+                      "Farmora",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ).animate().fadeIn(delay: 200.ms),
 
-                  const SizedBox(height: 8),
+                    Text(
+                      "Cultivating Success, Together.",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                        letterSpacing: 0.5,
+                      ),
+                    ).animate().fadeIn(delay: 400.ms),
 
-                  Text(
-                    "Smart Farming for a Better Future",
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ).animate().fadeIn(delay: 400.ms),
+                    const SizedBox(height: 48),
 
-                  const SizedBox(height: 48),
-
-                  // Login Form
-                  Card(
-                    elevation: 0,
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        children: [
-                          Text(
-                            _otpSent ? "Verify OTP" : "Welcome Farmer",
-                            style: Theme.of(context).textTheme.titleLarge,
+                    // Login Form
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _otpSent ? "Verify Mobile" : "Login to your account",
+                          style: GoogleFonts.dmSans(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
-                          const SizedBox(height: 24),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _otpSent
+                              ? "Enter the OTP sent to ${_mobileController.text}"
+                              : "Enter your mobile number to get started",
+                          style: GoogleFonts.dmSans(
+                              color: Colors.grey[600], fontSize: 14),
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _mobileController,
+                          keyboardType: TextInputType.phone,
+                          enabled: !_otpSent,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w500),
+                          decoration: InputDecoration(
+                            labelText: "Mobile Number",
+                            prefixIcon: const Icon(Icons.phone_android_rounded),
+                            hintText: "9876543210",
+                            prefixText: "+91 ",
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                        ),
+                        if (_otpSent) ...[
+                          const SizedBox(height: 16),
                           TextField(
-                            controller: _mobileController,
-                            keyboardType: TextInputType.phone,
-                            enabled: !_otpSent,
-                            decoration: const InputDecoration(
-                              labelText: "Mobile Number",
-                              prefixIcon: Icon(Icons.phone_android_rounded),
-                              hintText: "+91 98765 43210",
+                            controller: _otpController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(
+                                fontSize: 18,
+                                letterSpacing: 4,
+                                fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                            decoration: InputDecoration(
+                              labelText: "Enter OTP",
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
+                              filled: true,
+                              fillColor: Colors.grey[50],
                             ),
-                          ),
-                          if (_otpSent) ...[
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _otpController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: "Enter OTP",
-                                prefixIcon: Icon(Icons.lock_outline_rounded),
-                              ),
-                            ).animate().fadeIn().slideY(begin: 0.2, end: 0),
-                          ],
-                          const SizedBox(height: 32),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleLogin,
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Text(
-                                      _otpSent ? "Verify & Login" : "Send OTP",
-                                    ),
-                            ),
-                          ),
+                          ).animate().fadeIn().slideY(begin: 0.2, end: 0),
                         ],
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleLogin,
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : Text(
+                                _otpSent ? "VERIFY & LOGIN" : "SEND OTP",
+                                style: const TextStyle(
+                                    fontSize: 16, letterSpacing: 1),
+                              ),
                       ),
                     ),
-                  ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
-                ],
+
+                    const SizedBox(height: 24),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          "New here? Create Account",
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
