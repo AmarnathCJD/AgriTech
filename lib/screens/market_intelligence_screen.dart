@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/market_intelligence_service.dart';
+import 'dart:async';
 
 class MarketIntelligenceScreen extends StatefulWidget {
   const MarketIntelligenceScreen({super.key});
@@ -16,32 +17,52 @@ class MarketIntelligenceScreen extends StatefulWidget {
 class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
   final MarketIntelligenceService _service = MarketIntelligenceService();
   bool _isLoading = true;
-  MarketSentiment? _sentiment;
-  List<String> _trends = [];
-  List<SocialPost> _feed = [];
-  List<double> _priceData = [];
+
+  // Real Data
+  List<StockMarketData> _marketData = [];
+  List<NewsItem> _news = [];
+  Map<String, dynamic> _sentiment = {};
+
+  int _selectedCommodityIndex = 0; // For graph
+
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _startAutoCycle();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startAutoCycle() {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted && !_isLoading && _marketData.isNotEmpty) {
+        setState(() {
+          _selectedCommodityIndex =
+              (_selectedCommodityIndex + 1) % _marketData.length;
+        });
+      }
+    });
   }
 
   Future<void> _loadData() async {
-    // Parallel fetching for faster load
     final results = await Future.wait([
-      _service.getMarketSentiment(),
-      _service.getTrendingHashtags(),
-      _service.getSocialFeed(),
-      _service.getPricePredictionData(),
+      _service.fetchAgmarknetLive(),
+      _service.fetchAgriNews(),
+      _service.getSentimentAndTrends(),
     ]);
 
     if (mounted) {
       setState(() {
-        _sentiment = results[0] as MarketSentiment;
-        _trends = results[1] as List<String>;
-        _feed = results[2] as List<SocialPost>;
-        _priceData = results[3] as List<double>;
+        _marketData = results[0] as List<StockMarketData>;
+        _news = results[1] as List<NewsItem>;
+        _sentiment = results[2] as Map<String, dynamic>;
         _isLoading = false;
       });
     }
@@ -50,276 +71,439 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF8F5F2), // Light warm grey/beige
       appBar: AppBar(
-        title: Text("Market Intelligence",
-            style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.bold, color: Colors.black87)),
+        title: Text("Market Pulse Live",
+            style: GoogleFonts.playfairDisplay(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+                fontSize: 24)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() => _isLoading = true);
-              _loadData();
-            },
+            onPressed: _loadData,
+            icon: const Icon(Icons.sync, color: Colors.green),
           )
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.green))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildSentimentCard(),
+                  // 1. Live Ticker
+                  _buildLiveTicker(),
+
+                  // 2. Main Graph Area
+                  _buildStockMarketGraph(),
+
+                  // 3. Commodity Selector Chips
+                  _buildCommoditySelector(),
+
                   const SizedBox(height: 24),
-                  _buildPricePredictionChart(),
+
+                  // 4. Sentiment & Trends
+                  _buildSentimentSection(),
+
                   const SizedBox(height: 24),
-                  _buildTrendingTopics(),
-                  const SizedBox(height: 24),
-                  Text("Live Social Pulse",
-                      style: GoogleFonts.dmSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[800])),
-                  const SizedBox(height: 12),
-                  ..._feed.map((post) => _buildSocialPostCard(post)).toList(),
+
+                  // 5. Breaking News
+                  _buildNewsSection(),
+                  const SizedBox(height: 50),
                 ],
-              ).animate().fadeIn(duration: 500.ms),
+              ),
             ),
     );
   }
 
-  Widget _buildSentimentCard() {
-    Color sentimentColor =
-        _sentiment?.label == "Bullish" ? Colors.green : Colors.red;
+  Widget _buildLiveTicker() {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Market Mood",
-                      style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
-                  Text(_sentiment!.label.toUpperCase(),
-                      style: GoogleFonts.dmSans(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: sentimentColor)),
-                ],
-              ),
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: sentimentColor.withOpacity(0.1),
-                  border: Border.all(color: sentimentColor, width: 2),
-                ),
-                child: Center(
-                  child: Text("${_sentiment!.score.toInt()}",
-                      style: GoogleFonts.dmSans(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: sentimentColor)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: _sentiment!.score / 100,
-            backgroundColor: Colors.grey[200],
-            valueColor: AlwaysStoppedAnimation<Color>(sentimentColor),
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _sentiment!.reason,
-            style: GoogleFonts.dmSans(
-                fontSize: 13,
-                color: Colors.grey[700],
-                fontStyle: FontStyle.italic),
-          ),
-        ],
+      height: 40,
+      color: Colors.white,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _marketData.length,
+        itemBuilder: (context, index) {
+          final item = _marketData[index];
+          final isUp = item.change >= 0;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                border: Border(right: BorderSide(color: Colors.grey.shade200))),
+            child: Row(
+              children: [
+                Text(item.commodityName.toUpperCase(),
+                    style: GoogleFonts.dmSans(
+                        color: Colors.grey[800],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+                const SizedBox(width: 8),
+                Text("₹${item.currentPrice.toStringAsFixed(0)}",
+                    style: GoogleFonts.dmSans(
+                        color: Colors.black, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 4),
+                Text("${isUp ? '+' : ''}${item.change.toStringAsFixed(2)}%",
+                    style: GoogleFonts.dmSans(
+                        color: isUp ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+                const SizedBox(width: 4),
+                Icon(isUp ? Icons.arrow_upward : Icons.arrow_downward,
+                    color: isUp ? Colors.green : Colors.red, size: 12),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildPricePredictionChart() {
+  Widget _buildStockMarketGraph() {
+    if (_marketData.isEmpty) return const SizedBox.shrink();
+
+    final selectedItem = _marketData[_selectedCommodityIndex];
+    final isUp = selectedItem.change >= 0;
+    final color = isUp ? Colors.green : Colors.red;
+
+    // Prepare spots
+    List<FlSpot> spots = [];
+    for (int i = 0; i < selectedItem.historyPoints.length; i++) {
+      spots.add(FlSpot(i.toDouble(), selectedItem.historyPoints[i]));
+    }
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      height: 350,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
-        ],
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("AI Price Forecast (7 Days)",
-              style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800])),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(show: false),
+          Text(selectedItem.commodityName,
+              style: GoogleFonts.playfairDisplay(
+                  color: Colors.black87,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Text("₹${selectedItem.currentPrice.toStringAsFixed(2)}",
+                  style: GoogleFonts.dmSans(
+                      color: Colors.black87,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w300)),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4)),
+                child: Text(
+                    "${isUp ? '+' : ''}${selectedItem.change.toStringAsFixed(2)}%",
+                    style:
+                        TextStyle(color: color, fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+          const SizedBox(height: 30),
+          Expanded(
+            child: LineChart(LineChartData(
+                gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) =>
+                        FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
                 titlesData: FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
                 minX: 0,
-                maxX: 6,
-                minY: 2000,
-                maxY: 2200,
+                maxX: 2,
+                minY:
+                    selectedItem.historyPoints.reduce((a, b) => a < b ? a : b) *
+                        0.95,
+                maxY:
+                    selectedItem.historyPoints.reduce((a, b) => a > b ? a : b) *
+                        1.05,
                 lineBarsData: [
                   LineChartBarData(
-                    spots: _priceData
-                        .asMap()
-                        .entries
-                        .map((e) => FlSpot(e.key.toDouble(), e.value))
-                        .toList(),
-                    isCurved: true,
-                    color: Colors.blueAccent,
-                    barWidth: 4,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(show: true),
-                    belowBarData: BarAreaData(
-                        show: true, color: Colors.blueAccent.withOpacity(0.1)),
-                  ),
+                      spots: spots,
+                      isCurved: true,
+                      color: color,
+                      barWidth: 4,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) =>
+                              FlDotCirclePainter(
+                                  radius: 6,
+                                  color: color,
+                                  strokeWidth: 3,
+                                  strokeColor: Colors.white)),
+                      belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                color.withOpacity(0.2),
+                                color.withOpacity(0.0)
+                              ])))
+                ])).animate().slideX(
+                duration: 600.ms, curve: Curves.easeOutQuint),
+          ),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("2 Days Ago",
+                  style: TextStyle(color: Colors.grey, fontSize: 10)),
+              Text("Yesterday",
+                  style: TextStyle(color: Colors.grey, fontSize: 10)),
+              Text("Today", style: TextStyle(color: Colors.grey, fontSize: 10)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommoditySelector() {
+    return SizedBox(
+      height: 45, // Much more compact
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _marketData.length,
+        itemBuilder: (context, index) {
+          final item = _marketData[index];
+          final isSelected = index == _selectedCommodityIndex;
+          final isUp = item.change >= 0;
+          final trendColor = isUp ? Colors.green : Colors.red;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedCommodityIndex = index;
+                _timer?.cancel();
+                _startAutoCycle();
+              });
+            },
+            child: AnimatedContainer(
+              duration: 300.ms,
+              curve: Curves
+                  .easeOut, // Changed from easeOutBack to avoid negative blur radius
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              decoration: BoxDecoration(
+                color: isSelected ? trendColor : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color:
+                        isSelected ? Colors.transparent : Colors.grey.shade300),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                            color: trendColor.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2))
+                      ]
+                    : [],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isSelected) ...[
+                    Icon(isUp ? Icons.trending_up : Icons.trending_down,
+                        size: 14, color: Colors.white),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(item.commodityName,
+                      style: GoogleFonts.dmSans(
+                          color: isSelected ? Colors.white : Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12)),
+                  if (isSelected)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        "${isUp ? '+' : ''}${item.change.toStringAsFixed(1)}%",
+                        style: GoogleFonts.dmSans(
+                            color: Colors.white, fontSize: 10),
+                      ),
+                    ),
                 ],
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildTrendingTopics() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Trending Topics",
-            style: GoogleFonts.dmSans(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800])),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _trends
-              .map((tag) => Chip(
-                    label: Text(tag,
-                        style: GoogleFonts.dmSans(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue[800])),
-                    backgroundColor: Colors.blue[50],
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide.none),
-                  ))
-              .toList(),
-        ),
-      ],
-    );
-  }
+  Widget _buildSentimentSection() {
+    final trends = _sentiment['trends'] as List<String>;
+    final isBullish = _sentiment['label'] == 'Bullish';
 
-  Widget _buildSocialPostCard(SocialPost post) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 5,
-              offset: const Offset(0, 2)),
-        ],
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(
-                backgroundColor:
-                    post.platform == 'X' ? Colors.black : Colors.blue[900],
-                radius: 16,
-                child: Icon(post.platform == 'X' ? Icons.close : Icons.facebook,
-                    size: 16, color: Colors.white),
-              ),
+              Icon(Icons.psychology, color: Colors.purple),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(post.author,
-                      style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(post.handle,
-                      style:
-                          GoogleFonts.dmSans(color: Colors.grey, fontSize: 12)),
-                ],
-              ),
+              Text("AI Market Sentiment",
+                  style: GoogleFonts.dmSans(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
               const Spacer(),
-              Text(post.timeAgo,
-                  style: GoogleFonts.dmSans(color: Colors.grey, fontSize: 12)),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: (isBullish ? Colors.green : Colors.red)
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text(_sentiment['label'].toUpperCase(),
+                    style: TextStyle(
+                        color: isBullish ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+              )
             ],
           ),
           const SizedBox(height: 12),
-          Text(post.content,
+          Text(_sentiment['reason'],
               style: GoogleFonts.dmSans(
-                  fontSize: 15, height: 1.4, color: Colors.black87)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.favorite_border, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Text("${post.likes}",
-                  style: GoogleFonts.dmSans(
-                      fontSize: 12, color: Colors.grey[600])),
-              const SizedBox(width: 16),
-              Icon(Icons.share, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Text("${post.shares}",
-                  style: GoogleFonts.dmSans(
-                      fontSize: 12, color: Colors.grey[600])),
-            ],
-          ),
+                  color: Colors.grey.shade700, fontSize: 13, height: 1.5)),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: trends
+                .map((t) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border:
+                              Border.all(color: Colors.blue.withOpacity(0.3))),
+                      child: Text(t,
+                          style: TextStyle(
+                              color: Colors.blue.shade800, fontSize: 12)),
+                    ))
+                .toList(),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewsSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("BREAKING NEWS",
+              style: GoogleFonts.bebasNeue(
+                  color: Colors.redAccent, fontSize: 24, letterSpacing: 1.2)),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _news.length,
+              itemBuilder: (context, index) {
+                final item = _news[index];
+                return Container(
+                  width: 250,
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4))
+                      ],
+                      image: item.imageUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(item.imageUrl),
+                              fit: BoxFit.cover,
+                              colorFilter: ColorFilter.mode(
+                                  Colors.black.withOpacity(0.3),
+                                  BlendMode.srcOver)) // Lighter overlay
+                          : null),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => launchUrl(Uri.parse(item.link)),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(4)),
+                              child: Text(item.source,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(item.title,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    shadows: [
+                                      Shadow(
+                                          blurRadius: 10,
+                                          color: Colors.black.withOpacity(0.8))
+                                    ],
+                                    height: 1.3)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
         ],
       ),
     );

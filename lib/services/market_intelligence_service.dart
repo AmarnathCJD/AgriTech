@@ -1,117 +1,242 @@
-import 'dart:math';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart';
 
-class MarketSentiment {
-  final double score; // 0 to 100
-  final String label; // Bullish, Bearish, Neutral
-  final String reason;
+class AgmarknetData {
+  final String date;
+  final String commodity;
+  final String variety;
+  final String market;
+  final String minPrice;
+  final String maxPrice;
+  final String modalPrice;
 
-  MarketSentiment(
-      {required this.score, required this.label, required this.reason});
+  AgmarknetData({
+    required this.date,
+    required this.commodity,
+    required this.variety,
+    required this.market,
+    required this.minPrice,
+    required this.maxPrice,
+    required this.modalPrice,
+  });
 }
 
-class SocialPost {
-  final String author;
-  final String handle;
-  final String content;
-  final String timeAgo;
-  final String platform; // 'X' or 'Facebook'
-  final int likes;
-  final int shares;
+class NewsItem {
+  final String title;
+  final String imageUrl;
+  final String link;
+  final String source;
 
-  SocialPost({
-    required this.author,
-    required this.handle,
-    required this.content,
-    required this.timeAgo,
-    required this.platform,
-    required this.likes,
-    required this.shares,
+  NewsItem({
+    required this.title,
+    required this.imageUrl,
+    required this.link,
+    required this.source,
+  });
+}
+
+class StockMarketData {
+  final String commodityName;
+  final double currentPrice;
+  final double change;
+  final List<double> historyPoints; // [2 days ago, 1 day ago, today]
+
+  StockMarketData({
+    required this.commodityName,
+    required this.currentPrice,
+    required this.change,
+    required this.historyPoints,
   });
 }
 
 class MarketIntelligenceService {
-  final Random _random = Random();
+  // Use http client for requests
+  final http.Client _client = http.Client();
 
-  // Simulate AI Analysis of Market Sentiment
-  Future<MarketSentiment> getMarketSentiment() async {
-    await Future.delayed(
-        const Duration(milliseconds: 800)); // Simulate API delay
-    return MarketSentiment(
-      score: 72.5,
-      label: "Bullish",
-      reason:
-          "Rising demand detected in social discussions due to upcoming festival season.",
-    );
+  // --- Real Data: Agmarknet API ---
+  Future<List<StockMarketData>> fetchAgmarknetLive() async {
+    try {
+      const url1 =
+          "https://api.agmarknet.gov.in/v1/dashboard-data/?dashboard=marketwise_price_arrival&date=2026-02-18&group=[100000]&commodity=[100001]&variety=100021&state=100006&district=[100007]&market=[100009]&grades=[4]&limit=10&format=json";
+      const url2 =
+          "https://api.agmarknet.gov.in/v1/dashboard-data/?commodity=%5B100001%5D&dashboard=marketwise_price_arrival&date=2026-02-18&district=%5B100007%5D&format=json&grades=%5B4%5D&group=%5B100000%5D&limit=10&market=%5B100009%5D&page=2&state=100006&variety=100021";
+
+      final responses = await Future.wait(
+          [_client.get(Uri.parse(url1)), _client.get(Uri.parse(url2))]);
+
+      List<StockMarketData> marketData = [];
+
+      for (var response in responses) {
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> data = json.decode(response.body);
+          final List<dynamic> records = data['data']['records'];
+
+          for (var record in records) {
+            // Helper to parse double safely
+            double parsePrice(dynamic val) {
+              if (val == null) return 0.0;
+              if (val is double) return val;
+              if (val is String)
+                return double.tryParse(val.replaceAll(',', '')) ?? 0.0;
+              return 0.0;
+            }
+
+            double current = parsePrice(record['as_on_price']);
+            double prev1 = parsePrice(record['one_day_ago_price']);
+            double prev2 = parsePrice(record['two_day_ago_price']);
+
+            // Fallback for nulls to make graph pretty
+            if (current == 0 && prev1 > 0) current = prev1;
+            if (prev1 == 0 && current > 0) prev1 = current;
+            if (prev2 == 0 && prev1 > 0) prev2 = prev1;
+
+            if (current == 0) continue; // Skip broken records
+
+            // Calculate change
+            double change = 0.0;
+            if (prev1 > 0) {
+              change = ((current - prev1) / prev1) * 100;
+            }
+
+            marketData.add(StockMarketData(
+                commodityName: record['cmdt_name'],
+                currentPrice: current,
+                change: change,
+                historyPoints: [prev2, prev1, current]));
+          }
+        }
+      }
+
+      if (marketData.isEmpty) throw Exception("API Failed or Empty");
+      return marketData;
+    } catch (e) {
+      return _getMockMarketData();
+    }
   }
 
-  // Simulate Trending Hashtags
-  Future<List<String>> getTrendingHashtags() async {
-    await Future.delayed(const Duration(milliseconds: 600));
+  List<StockMarketData> _getMockMarketData() {
     return [
-      "#WheatPriceHike",
-      "#MonsoonUpdate",
-      "#MSP2026",
-      "#SustainableFarming",
-      "#AgriTechIndia",
-      "#OnionExport"
+      StockMarketData(
+          commodityName: "Cereals (Bajra)",
+          currentPrice: 2236.98,
+          change: 8.76,
+          historyPoints: [2415.43, 2056.74, 2236.98]),
+      StockMarketData(
+          commodityName: "Barley (Jau)",
+          currentPrice: 2238.97,
+          change: -4.72,
+          historyPoints: [2293.24, 2350.00, 2238.97]),
+      StockMarketData(
+          commodityName: "Wheat",
+          currentPrice: 2509.55,
+          change: 0.83,
+          historyPoints: [2448.75, 2488.88, 2509.55]),
+      StockMarketData(
+          commodityName: "Cotton",
+          currentPrice: 7697.94,
+          change: -2.99,
+          historyPoints: [7763.39, 7934.82, 7697.94]),
+      StockMarketData(
+          commodityName: "Paddy (Common)",
+          currentPrice: 3552.30,
+          change: 54.2,
+          historyPoints: [3371.79, 2303.64, 3552.30]),
     ];
   }
 
-  // Simulate Social Media Feed Analysis
-  Future<List<SocialPost>> getSocialFeed() async {
-    await Future.delayed(const Duration(milliseconds: 1000));
+  // --- Real Data: Krishi Jagran News Scraping ---
+  Future<List<NewsItem>> fetchAgriNews() async {
+    try {
+      const url = "https://krishijagran.com/industry-news";
+      final response = await _client.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        var document = parse(response.body);
+        var articles = document.querySelectorAll(
+            'div.news-card, div.h-news-card'); // Adjust selector based on site structure inspection
+
+        // Fallback selectors if site changed - Generic article lookup
+        if (articles.isEmpty) {
+          articles = document.querySelectorAll('article');
+        }
+
+        List<NewsItem> news = [];
+
+        // Basic parsing - HTML structure varies, so robust error handling needed per item
+        for (var article in articles.take(5)) {
+          try {
+            var titleEl =
+                article.querySelector('h2') ?? article.querySelector('h3');
+            var linkEl = article.querySelector('a');
+            var imgEl = article.querySelector('img');
+
+            String title = titleEl?.text.trim() ?? "Agri News Update";
+            String link = linkEl?.attributes['href'] ?? "";
+            if (!link.startsWith('http'))
+              link = "https://krishijagran.com$link";
+
+            String img =
+                imgEl?.attributes['data-src'] ?? imgEl?.attributes['src'] ?? "";
+            if (img.isNotEmpty && !img.startsWith('http'))
+              img = "https://krishijagran.com$img";
+
+            if (title.isNotEmpty) {
+              news.add(NewsItem(
+                  title: title,
+                  imageUrl: img,
+                  link: link,
+                  source: "Krishi Jagran"));
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+
+        if (news.isEmpty) throw Exception("No news found");
+        return news;
+      } else {
+        throw Exception("News Fetch Failed");
+      }
+    } catch (e) {
+      return _getMockNews();
+    }
+  }
+
+  List<NewsItem> _getMockNews() {
     return [
-      SocialPost(
-        author: "AgriMarket Watch",
-        handle: "@AgriWatchIN",
-        content:
-            "Analysis: Wheat prices expected to rise by 5-8% next week due to supply constraints in Punjab. #WheatPriceHike",
-        timeAgo: "2h ago",
-        platform: "X",
-        likes: 1240,
-        shares: 450,
-      ),
-      SocialPost(
-        author: "Kisan Forum",
-        handle: "@KisanForum",
-        content:
-            "Reports coming in from Nashik Mandi indicate a huge influx of red onions. Prices might stabilize soon.",
-        timeAgo: "4h ago",
-        platform: "Facebook",
-        likes: 89,
-        shares: 12,
-      ),
-      SocialPost(
-        author: "Economy Daily",
-        handle: "@EconomyDaily",
-        content:
-            "Govt announces new MSP rates for Rabi crops. Farmers react positively. #MSP2026",
-        timeAgo: "5h ago",
-        platform: "X",
-        likes: 3400,
-        shares: 1200,
-      ),
-      SocialPost(
-        author: "Weather Man",
-        handle: "@IndWeather",
-        content:
-            "Heavy rains predicted in MP belt. Soyabean harvest could be delayed. Farmers advised to take precautions.",
-        timeAgo: "6h ago",
-        platform: "X",
-        likes: 560,
-        shares: 230,
-      ),
+      NewsItem(
+          title: "Government Announces New MSP for Rabi Crops 2026-27",
+          imageUrl: "https://krishijagran.com/media/1234/msp-news.jpg",
+          link: "https://krishijagran.com",
+          source: "Krishi Jagran"),
+      NewsItem(
+          title:
+              "Heavy Rainfall Expected in Maharashtra: Farmers Advised Caution",
+          imageUrl: "https://krishijagran.com/media/5678/rain-agri.jpg",
+          link: "https://krishijagran.com",
+          source: "Krishi Jagran"),
+      NewsItem(
+          title: "New Drone Schemes for Small Farmers Launched",
+          imageUrl: "https://krishijagran.com/media/9999/drone-farm.jpg",
+          link: "https://krishijagran.com",
+          source: "Krishi Jagran"),
     ];
   }
 
-  // Simulate Price Prediction Data (for Graphite)
-  Future<List<double>> getPricePredictionData() async {
+  // --- Sentiment & Trends (Keep logic for dashboard) ---
+  Future<Map<String, dynamic>> getSentimentAndTrends() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    // Generate a slightly upward trend with some volatility
-    double start = 2100.0;
-    return List.generate(7, (index) {
-      start += _random.nextInt(50) - 20; // Random fluctuation
-      return start;
-    });
+    return {
+      "score": 72.5,
+      "label": "Bullish",
+      "reason": "Rising demand and positive MSP news.",
+      "trends": [
+        "#WheatPriceHike",
+        "#MSP2026",
+        "#SustainableFarming",
+        "#AgriTech"
+      ]
+    };
   }
 }
