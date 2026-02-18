@@ -8,10 +8,15 @@ import 'providers/localization_provider.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
+import 'services/price_alert_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  await PriceAlertService().init();
+
   runApp(
     MultiProvider(
       providers: [

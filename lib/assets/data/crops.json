@@ -114,6 +114,22 @@
         "drought_tolerance": "Medium"
     },
     {
+        "crop_name": "Sorghum (Jowar)",
+        "ideal_temp_min_c": 25,
+        "ideal_temp_max_c": 32,
+        "optimal_temp_c": 28,
+        "water_requirement_mm_per_season": 400,
+        "crop_duration_days": 110,
+        "suitable_soil_types": [
+            "Loamy",
+            "Clay"
+        ],
+        "ideal_ph_min": 5.5,
+        "ideal_ph_max": 8.0,
+        "flood_tolerance": "Low",
+        "drought_tolerance": "High"
+    },
+    {
         "crop_name": "Millet (Pearl Millet / Bajra)",
         "ideal_temp_min_c": 25,
         "ideal_temp_max_c": 35,

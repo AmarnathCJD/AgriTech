@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/market_intelligence_service.dart';
+import '../services/price_alert_service.dart';
 import 'dart:async';
 
 class MarketIntelligenceScreen extends StatefulWidget {
@@ -19,11 +20,13 @@ class MarketIntelligenceScreen extends StatefulWidget {
 class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
   final MarketIntelligenceService _service = MarketIntelligenceService();
   bool _isLoading = true;
+  bool _isSentimentLoading = true;
 
   // Real Data
   List<StockMarketData> _marketData = [];
   List<NewsItem> _news = [];
   Map<String, dynamic> _sentiment = {};
+  List<TwitterPost> _tweets = [];
 
   int _selectedCommodityIndex = 0; // For graph
 
@@ -42,6 +45,350 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
     super.dispose();
   }
 
+  // ── Price Alert Sheet ────────────────────────────────────────────────────
+
+  Future<void> _showPriceAlertSheet() async {
+    final alertService = PriceAlertService();
+    await alertService.requestPermission();
+
+    final cropController = TextEditingController();
+    final priceController = TextEditingController();
+    String condition = 'above';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 24,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8F5F2),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+
+                Row(
+                  children: [
+                    const Icon(Icons.notifications_active,
+                        color: Colors.deepPurple, size: 22),
+                    const SizedBox(width: 10),
+                    Text('Price Alerts',
+                        style: GoogleFonts.playfairDisplay(
+                          color: Colors.black87,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        )),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final crop = alertService.alerts.isNotEmpty
+                            ? alertService.alerts.first.cropName
+                            : 'Wheat';
+                        final target = alertService.alerts.isNotEmpty
+                            ? alertService.alerts.first.targetPrice
+                            : 2200.0;
+                        await alertService.simulateAlert(
+                          cropName: crop,
+                          price: target + 150,
+                          condition: 'above',
+                          targetPrice: target,
+                        );
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                            content: Text('🔔 Demo alert fired for $crop!'),
+                            backgroundColor: Colors.deepPurple,
+                            duration: const Duration(seconds: 2),
+                          ));
+                        }
+                      },
+                      icon: const Icon(Icons.play_circle_outline,
+                          color: Colors.deepPurple, size: 16),
+                      label: Text('Simulate',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.deepPurple,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          )),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Add Alert Form
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2))
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('SET NEW ALERT',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.grey,
+                            fontSize: 11,
+                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.bold,
+                          )),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: cropController,
+                              style: const TextStyle(color: Colors.black87),
+                              decoration: InputDecoration(
+                                hintText: 'Crop (e.g. Wheat)',
+                                hintStyle:
+                                    TextStyle(color: Colors.grey.shade400),
+                                filled: true,
+                                fillColor: Colors.grey.shade100,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: priceController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: Colors.black87),
+                              decoration: InputDecoration(
+                                hintText: '₹ Target/q',
+                                hintStyle:
+                                    TextStyle(color: Colors.grey.shade400),
+                                filled: true,
+                                fillColor: Colors.grey.shade100,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _conditionChip('above', condition,
+                                    (v) => setSheetState(() => condition = v)),
+                                const SizedBox(width: 8),
+                                _conditionChip('below', condition,
+                                    (v) => setSheetState(() => condition = v)),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final crop = cropController.text.trim();
+                              final price =
+                                  double.tryParse(priceController.text.trim());
+                              if (crop.isEmpty || price == null) return;
+                              await alertService.addAlert(PriceAlert(
+                                id: DateTime.now()
+                                    .millisecondsSinceEpoch
+                                    .toString(),
+                                cropName: crop,
+                                targetPrice: price,
+                                condition: condition,
+                              ));
+                              cropController.clear();
+                              priceController.clear();
+                              setSheetState(() {});
+                              setState(() {});
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
+                            ),
+                            child: Text('Add',
+                                style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Active Alerts List
+                if (alertService.alerts.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text('No alerts set yet.',
+                          style: GoogleFonts.dmSans(
+                              color: Colors.grey, fontSize: 14)),
+                    ),
+                  )
+                else
+                  ...alertService.alerts.map((alert) => Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: alert.triggered
+                              ? Colors.green.withOpacity(0.08)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: alert.triggered
+                                ? Colors.green.withOpacity(0.3)
+                                : Colors.grey.shade200,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2))
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              alert.triggered
+                                  ? Icons.check_circle
+                                  : Icons.notifications_outlined,
+                              color: alert.triggered
+                                  ? Colors.green
+                                  : Colors.deepPurple,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(alert.cropName,
+                                      style: GoogleFonts.dmSans(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      )),
+                                  Text(
+                                    '${alert.condition == "above" ? "↑ Above" : "↓ Below"} ₹${alert.targetPrice.toStringAsFixed(0)}/q',
+                                    style: GoogleFonts.dmSans(
+                                        color: Colors.grey, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (alert.triggered)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: Colors.green.withOpacity(0.3)),
+                                ),
+                                child: Text('Triggered',
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.green[700],
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    )),
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: Colors.red, size: 20),
+                              onPressed: () async {
+                                await alertService.removeAlert(alert.id);
+                                setSheetState(() {});
+                                setState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      )),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _conditionChip(
+      String value, String selected, ValueChanged<String> onTap) {
+    final isSelected = value == selected;
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.deepPurple : Colors.white10,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: isSelected ? Colors.deepPurple : Colors.white24),
+        ),
+        child: Text(
+          value == 'above' ? '↑ Above' : '↓ Below',
+          style: GoogleFonts.dmSans(
+            color: isSelected ? Colors.white : Colors.white60,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _startAutoCycle() {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted && !_isLoading && _marketData.isNotEmpty) {
@@ -54,21 +401,165 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
   }
 
   Future<void> _loadData() async {
+    // Load market data and news first so UI renders immediately
     final results = await Future.wait([
       _service.fetchAgmarknetLive(),
       _service.fetchAgriNews(),
-      _service.getSentimentAndTrends(),
     ]);
 
     if (mounted) {
       setState(() {
         _marketData = results[0] as List<StockMarketData>;
         _news = results[1] as List<NewsItem>;
-        _sentiment = results[2] as Map<String, dynamic>;
         _isLoading = false;
       });
     }
+
+    // Load sentiment in background — doesn't block UI
+    _loadSentimentInBackground();
   }
+
+  Future<void> _loadSentimentInBackground() async {
+    final sentiment = await _service.getSentimentAndTrends();
+    if (mounted) {
+      setState(() {
+        _sentiment = sentiment;
+        _tweets = _service.fetchedTweets;
+        _isSentimentLoading = false;
+      });
+    }
+  }
+
+  // --- New Methods for Twitter Trends ---
+
+  Widget _buildTwitterTrends() {
+    if (_tweets.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              // X Logo (or just text "Trending on X")
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("TRENDING ON TWITTER",
+                        style: GoogleFonts.bebasNeue(
+                            color: Colors.red,
+                            fontSize: 24,
+                            letterSpacing: 1.2)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 160,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: _tweets.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final tweet = _tweets[index];
+              return Container(
+                width: 280,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: InkWell(
+                  onTap: () => launchUrl(Uri.parse(tweet.url)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundImage: NetworkImage(tweet.authorAvatar),
+                            onBackgroundImageError: (_, __) {},
+                            child: tweet.authorAvatar.isEmpty
+                                ? const Icon(Icons.person, size: 12)
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              tweet.author,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.dmSans(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.open_in_new,
+                              size: 14, color: Colors.grey),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: Text(
+                          tweet.content,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.dmSans(
+                            color: Colors.black87,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                      if (tweet.image.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.image,
+                                size: 12, color: Colors.blue),
+                            const SizedBox(width: 4),
+                            Text(
+                              "View Media",
+                              style: GoogleFonts.dmSans(
+                                color: Colors.blue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        )
+                      ]
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +575,40 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         actions: [
+          // Bell with badge
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                onPressed: _showPriceAlertSheet,
+                icon: const Icon(Icons.notifications_outlined,
+                    color: Colors.deepPurple),
+                tooltip: 'Price Alerts',
+              ),
+              if (PriceAlertService().alerts.isNotEmpty)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${PriceAlertService().alerts.length}',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             onPressed: _loadData,
             icon: const Icon(Icons.sync, color: Colors.green),
@@ -99,21 +624,32 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
                   // 1. Live Ticker
                   _buildLiveTicker(),
 
-                  // 2. Main Graph Area
-                  _buildStockMarketGraph(),
-
-                  // 3. Commodity Selector Chips
-                  _buildCommoditySelector(),
-
-                  const SizedBox(height: 24),
-
-                  // 4. Sentiment & Trends
+                  // 2. AI Forecast & Sentiment (moved to top)
+                  const SizedBox(height: 16),
                   _buildSentimentSection(),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
-                  // 5. Breaking News
+                  // 3. Main Graph Area
+                  _buildStockMarketGraph(),
+
+                  // 4. Commodity Selector Chips
+                  _buildCommoditySelector(),
+
+                  const SizedBox(height: 16),
+
+                  // 5. Farmer Advisory + Crop Production
+                  _buildFarmerAdvisoryCard(),
+
+                  const SizedBox(height: 8),
+
+                  // 6. Twitter Trends
+                  _buildTwitterTrends(),
+
+                  // 6. Breaking News
                   _buildNewsSection(),
+                  const SizedBox(height: 32),
+                  _buildDataSourcesFooter(),
                   const SizedBox(height: 50),
                 ],
               ),
@@ -292,6 +828,231 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
     );
   }
 
+  // Static UPAG crop production data (2025-26 Kharif, First Advance Estimates)
+  static const _upagData = [
+    {'crop': 'Food Grains', 'production': 1733.3, 'unit': 'Lakh T'},
+    {'crop': 'Cereals', 'production': 1659.2, 'unit': 'Lakh T'},
+    {'crop': 'Pulses', 'production': 74.1, 'unit': 'Lakh T'},
+    {'crop': 'Oil Seeds', 'production': 275.6, 'unit': 'Lakh T'},
+  ];
+
+  Widget _buildFarmerAdvisoryCard() {
+    if (_isSentimentLoading && _sentiment.isEmpty)
+      return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Farmer Advisory ──────────────────────────────────────────────
+          if (!_isSentimentLoading && _sentiment['farmer_advice'] != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4A00E0).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.agriculture,
+                                color: Color(0xFF4A00E0), size: 15),
+                            const SizedBox(width: 6),
+                            Text('FARMER ADVISORY',
+                                style: GoogleFonts.dmSans(
+                                  color: const Color(0xFF4A00E0),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.1,
+                                )),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      // Crop badge
+                      if (_sentiment['top_crop'] != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: Colors.green.withOpacity(0.4)),
+                          ),
+                          child: Text('🌾 ${_sentiment['top_crop']}',
+                              style: GoogleFonts.dmSans(
+                                color: Colors.green[700],
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              )),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Action badge
+                  if (_sentiment['crop_action'] != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border:
+                            Border.all(color: Colors.orange.withOpacity(0.3)),
+                      ),
+                      child: Text(_sentiment['crop_action'] ?? '',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.orange[800],
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          )),
+                    ),
+                  const SizedBox(height: 10),
+                  // Advice text
+                  Text(
+                    _sentiment['farmer_advice'] ?? '',
+                    style: GoogleFonts.dmSans(
+                      color: Colors.black87,
+                      fontSize: 14,
+                      height: 1.55,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // ── Crop Production Summary (UPAG 2025-26 Kharif) ────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.bar_chart,
+                              color: Colors.green, size: 15),
+                          const SizedBox(width: 6),
+                          Text('CROP PRODUCTION',
+                              style: GoogleFonts.dmSans(
+                                color: Colors.green[700],
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.1,
+                              )),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Text('2025–26 Kharif',
+                        style: GoogleFonts.dmSans(
+                          color: Colors.grey,
+                          fontSize: 11,
+                        )),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                ..._upagData.map((d) {
+                  final pct = (d['production'] as double) / 1733.3;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(d['crop'] as String,
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  )),
+                            ),
+                            Text(
+                                '${(d['production'] as double).toStringAsFixed(1)} ${d['unit']}',
+                                style: GoogleFonts.dmSans(
+                                  color: Colors.green[700],
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                )),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: pct.clamp(0.0, 1.0),
+                            minHeight: 6,
+                            backgroundColor: Colors.grey.shade100,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.green.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('Source: UPAG Gov API · First Advance Estimates',
+                      style:
+                          GoogleFonts.dmSans(color: Colors.grey, fontSize: 10)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCommoditySelector() {
     return SizedBox(
       height: 45, // Much more compact
@@ -366,7 +1127,54 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
   }
 
   Widget _buildSentimentSection() {
-    final trends = _sentiment['trends'] as List<String>;
+    if (_isSentimentLoading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          width: double.infinity,
+          height: 160,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4A00E0).withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Analysing market sentiment…',
+                style: GoogleFonts.outfit(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final trends =
+        (_sentiment['trends'] as List<dynamic>? ?? []).cast<String>();
     // final isBullish = _sentiment['label'] == 'Bullish'; // Usage handled dynamically in UI
 
     return Padding(
@@ -498,14 +1306,16 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
                   const SizedBox(height: 8),
                   // Description
                   Text(
-                    _sentiment['reason'],
+                    _sentiment['reason'] ?? '',
                     style: GoogleFonts.dmSans(
                       color: Colors.white.withOpacity(0.9),
                       fontSize: 15,
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 4),
                   Divider(color: Colors.white.withOpacity(0.2), height: 1),
                   const SizedBox(height: 16),
                   // Footer Trends
@@ -531,6 +1341,7 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ))
+                              .toList()
                               .toList(),
                         ),
                       ),
@@ -630,7 +1441,8 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
                                   size: 4, color: Colors.grey),
                               const SizedBox(width: 8),
                               Text(
-                                "Just Now", // Placeholder since we don't have time
+                                // "Just Now", // Placeholder since we don't have time
+                                "",
                                 style: GoogleFonts.dmSans(
                                   color: Colors.grey,
                                   fontSize: 11,
@@ -645,6 +1457,111 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
                 ),
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataSourcesFooter() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.verified_user_outlined,
+                  size: 16, color: Colors.grey[700]),
+              const SizedBox(width: 8),
+              Text(
+                'DATA SOURCES & ATTRIBUTION',
+                style: GoogleFonts.dmSans(
+                  color: Colors.grey[700],
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _sourceItem('Agmarknet (Govt. of India)',
+              'Real-time Mandi Prices & Arrivals', Icons.bar_chart),
+          _sourceItem('UPAG (Ministry of Agriculture)',
+              'Crop Production Estimates 2025-26', Icons.agriculture),
+          _sourceItem('Grok AI + Twitter',
+              'Market Sentiment Analysis & Forecasts', Icons.psychology),
+          _sourceItem('Krishi Jagran', 'Global & Local Agricultural News',
+              Icons.newspaper),
+          const SizedBox(height: 16),
+          Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+          const SizedBox(height: 16),
+          Center(
+            child: Text(
+              'Market data is indicative. Please verify with local mandis before trading.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                color: Colors.grey[400],
+                fontSize: 10,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sourceItem(String title, String desc, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 14, color: Colors.grey[600]),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.dmSans(
+                    color: Colors.black87,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: GoogleFonts.dmSans(
+                    color: Colors.grey[500],
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
