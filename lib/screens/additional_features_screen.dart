@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'widgets/chat_floating_button.dart';
 
 class AdditionalFeaturesScreen extends StatelessWidget {
   const AdditionalFeaturesScreen({super.key});
@@ -55,6 +56,7 @@ class AdditionalFeaturesScreen extends StatelessWidget {
           ),
         ].animate(interval: 100.ms).fadeIn().slideX(),
       ),
+      floatingActionButton: const ChatFloatingButton(),
     );
   }
 

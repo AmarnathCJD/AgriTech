@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
+import 'widgets/chat_floating_button.dart';
 
 // Market Intelligence Screen moved to lib/screens/market_intelligence_screen.dart
 
@@ -61,6 +62,7 @@ class RiskCalculatorScreen extends StatelessWidget {
           ],
         ),
       ),
+      floatingActionButton: const ChatFloatingButton(),
     );
   }
 
@@ -120,11 +122,19 @@ class EquipmentScreen extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        label: const Text("Rent Out My Tractor"),
-        icon: const Icon(Icons.add),
-        backgroundColor: Colors.brown,
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: "equipment_fab",
+            onPressed: () {},
+            label: const Text("Rent Out My Tractor"),
+            icon: const Icon(Icons.add),
+            backgroundColor: Colors.brown,
+          ),
+          const SizedBox(height: 16),
+          const ChatFloatingButton(),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

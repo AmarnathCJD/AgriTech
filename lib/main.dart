@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/crop_planning_provider.dart';
 import 'providers/harvest_provider.dart';
-import 'screens/login_screen.dart';
+import 'providers/chat_provider.dart';
+import 'providers/localization_provider.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -17,6 +18,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => CropPlanningProvider()),
         ChangeNotifierProvider(create: (_) => HarvestProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => LocalizationProvider()),
       ],
       child: const AgriTechApp(),
     ),
@@ -28,12 +31,17 @@ class AgriTechApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Farmora',
-      debugShowCheckedModeBanner: false,
-      theme: AgriTheme.themeData,
-      // home: const LoginScreen(),
-      home: const HomeScreen(),
+    return Consumer<LocalizationProvider>(
+      builder: (context, provider, child) {
+        return MaterialApp(
+          title: 'Farmora',
+          debugShowCheckedModeBanner: false,
+          theme: AgriTheme.themeData,
+          locale: provider.currentLocale,
+          // home: const LoginScreen(),
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }

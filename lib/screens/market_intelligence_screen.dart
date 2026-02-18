@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'widgets/chat_floating_button.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -117,6 +118,7 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
                 ],
               ),
             ),
+      floatingActionButton: const ChatFloatingButton(),
     );
   }
 

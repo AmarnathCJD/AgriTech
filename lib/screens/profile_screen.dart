@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
+import '../providers/localization_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -161,6 +162,60 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Language Selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Consumer<LocalizationProvider>(
+                builder: (context, provider, child) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          provider.t('language'),
+                          style: GoogleFonts.dmSans(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: provider.currentLocale.languageCode,
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          items: provider.languages.map((lang) {
+                            return DropdownMenuItem(
+                              value: lang['code'],
+                              child: Text(
+                                lang['name']!,
+                                style: GoogleFonts.dmSans(),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              provider.setLocale(Locale(newValue));
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
 

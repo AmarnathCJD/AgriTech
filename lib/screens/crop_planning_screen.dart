@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'widgets/chat_floating_button.dart';
 import '../providers/location_provider.dart';
 import '../providers/crop_planning_provider.dart';
 
@@ -37,6 +38,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
       body: planner.aiResults != null
           ? _buildResultsView(context, planner)
           : _buildInputForm(context, planner, locator),
+      floatingActionButton: const ChatFloatingButton(),
     );
   }
 
