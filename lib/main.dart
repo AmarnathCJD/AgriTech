@@ -7,6 +7,7 @@ import 'services/auth_service.dart';
 import 'providers/chat_provider.dart';
 import 'providers/localization_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/cart_provider.dart';
 import 'screens/login_screen.dart'; // Ensure this file exists
 import 'theme/app_theme.dart';
 
@@ -29,6 +30,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => LocalizationProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: const AgriTechApp(),
     ),

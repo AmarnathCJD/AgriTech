@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../models/product_model.dart';
 import '../../services/store_service.dart';
+import '../../providers/cart_provider.dart';
+import 'package:provider/provider.dart';
 import 'cart_screen.dart';
 
 class StoreScreen extends StatefulWidget {
@@ -27,6 +29,9 @@ class _StoreScreenState extends State<StoreScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CartProvider>().fetchCart();
+    });
     _fetchProducts();
   }
 
@@ -40,7 +45,9 @@ class _StoreScreenState extends State<StoreScreen> {
     } catch (e) {
       // Handle error
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -51,33 +58,51 @@ class _StoreScreenState extends State<StoreScreen> {
     _fetchProducts();
   }
 
-  Future<void> _addToCart(Product product) async {
-    final success = await _storeService.addToCart(product.id, 1);
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.name} added to cart')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add to cart')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Farm Store'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartScreen()),
-              );
-            },
+          Consumer<CartProvider>(
+            builder: (context, cart, child) => Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.shopping_cart),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const CartScreen()),
+                    );
+                  },
+                ),
+                if (cart.totalItems > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '${cart.totalItems}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+              ],
+            ),
           ),
         ],
       ),
@@ -236,7 +261,9 @@ class _StoreScreenState extends State<StoreScreen> {
                                           child: const Text('Close')),
                                       ElevatedButton(
                                         onPressed: () {
-                                          _addToCart(product);
+                                          context
+                                              .read<CartProvider>()
+                                              .addItem(product.id);
                                           Navigator.pop(context);
                                         },
                                         style: ElevatedButton.styleFrom(
@@ -318,17 +345,98 @@ class _StoreScreenState extends State<StoreScreen> {
                                         SizedBox(
                                           width: double.infinity,
                                           height: 36,
-                                          child: ElevatedButton(
-                                            onPressed: () =>
-                                                _addToCart(product),
-                                            style: ElevatedButton.styleFrom(
-                                              padding: EdgeInsets.zero,
-                                              backgroundColor: Colors.green,
-                                            ),
-                                            child: const Text('Add to Cart',
-                                                style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.white)),
+                                          child: Consumer<CartProvider>(
+                                            builder: (context, cart, child) {
+                                              final qty = cart
+                                                  .getItemQuantity(product.id);
+                                              final isLoading = cart
+                                                  .isItemLoading(product.id);
+
+                                              if (isLoading) {
+                                                return const Center(
+                                                  child: SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color:
+                                                                Colors.green),
+                                                  ),
+                                                );
+                                              }
+
+                                              if (qty > 0) {
+                                                return Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: () =>
+                                                          cart.removeItem(
+                                                              product.id),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(4),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.red[50],
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: const Icon(
+                                                            Icons.remove,
+                                                            size: 16,
+                                                            color: Colors.red),
+                                                      ),
+                                                    ),
+                                                    Text('$qty',
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold)),
+                                                    InkWell(
+                                                      onTap: () => cart
+                                                          .addItem(product.id),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(4),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color:
+                                                              Colors.green[50],
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: const Icon(
+                                                            Icons.add,
+                                                            size: 16,
+                                                            color:
+                                                                Colors.green),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              }
+
+                                              return ElevatedButton(
+                                                onPressed: () =>
+                                                    cart.addItem(product.id),
+                                                style: ElevatedButton.styleFrom(
+                                                  padding: EdgeInsets.zero,
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                                child: const Text('Add to Cart',
+                                                    style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.white)),
+                                              );
+                                            },
                                           ),
                                         ),
                                       ],
