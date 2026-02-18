@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
+
 import '../../models/product_model.dart';
 import '../../services/store_service.dart';
 import 'cart_screen.dart';
@@ -24,23 +24,50 @@ class _StoreScreenState extends State<StoreScreen> {
     'Machines'
   ];
 
+  int _cartItemCount = 0;
+
   @override
   void initState() {
     super.initState();
     _fetchProducts();
+    _fetchCart();
+  }
+
+  Future<void> _fetchCart() async {
+    if (!mounted) return;
+    try {
+      final cart = await _storeService.getCart();
+      if (mounted) {
+        setState(() => _cartItemCount = cart.totalItems);
+      }
+    } catch (e) {
+      print("StoreScreen: Error fetching cart: $e");
+    }
   }
 
   Future<void> _fetchProducts() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
+      print("StoreScreen: Fetching products for category: $_selectedCategory");
       final products = await _storeService.getProducts(
         category: _selectedCategory == 'All' ? null : _selectedCategory,
       );
-      setState(() => _products = products);
+      if (mounted) {
+        print("StoreScreen: Fetched ${products.length} products");
+        setState(() => _products = products);
+      }
     } catch (e) {
-      // Handle error
+      print("StoreScreen: Error fetching products: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading products: $e')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -68,6 +95,7 @@ class _StoreScreenState extends State<StoreScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+        _fetchCart(); // Update badge
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -94,14 +122,43 @@ class _StoreScreenState extends State<StoreScreen> {
       appBar: AppBar(
         title: const Text('Farm Store'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartScreen()),
-              );
-            },
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CartScreen()),
+                  ).then((_) => _fetchCart()); // Refresh on return
+                },
+              ),
+              if (_cartItemCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '$_cartItemCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -184,13 +241,18 @@ class _StoreScreenState extends State<StoreScreen> {
                                                       fit: BoxFit.cover)
                                                   : (product.image.startsWith(
                                                           'data:image')
-                                                      ? Image.memory(
-                                                          base64Decode(product
-                                                              .image
-                                                              .split(',')
-                                                              .last),
-                                                          fit: BoxFit.cover,
-                                                        )
+                                                      ? (product.decodedImage !=
+                                                              null
+                                                          ? Image.memory(
+                                                              product
+                                                                  .decodedImage!,
+                                                              fit: BoxFit.cover,
+                                                            )
+                                                          : const Icon(
+                                                              Icons.image,
+                                                              size: 80,
+                                                              color:
+                                                                  Colors.grey))
                                                       : const Icon(Icons.image,
                                                           size: 80,
                                                           color: Colors.grey)),
@@ -282,17 +344,21 @@ class _StoreScreenState extends State<StoreScreen> {
                                       width: double.infinity,
                                       child: product.image
                                               .startsWith('data:image')
-                                          ? Image.memory(
-                                              base64Decode(product.image
-                                                  .split(',')
-                                                  .last),
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (c, o, s) =>
-                                                  Container(
-                                                      color: Colors.grey[300],
-                                                      child: const Icon(Icons
-                                                          .image_not_supported)),
-                                            )
+                                          ? (product.decodedImage != null
+                                              ? Image.memory(
+                                                  product.decodedImage!,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (c, o, s) =>
+                                                      Container(
+                                                          color:
+                                                              Colors.grey[300],
+                                                          child: const Icon(Icons
+                                                              .image_not_supported)),
+                                                )
+                                              : Container(
+                                                  color: Colors.grey[300],
+                                                  child: const Icon(Icons
+                                                      .image_not_supported)))
                                           : Image.network(
                                               product.image,
                                               fit: BoxFit.cover,
