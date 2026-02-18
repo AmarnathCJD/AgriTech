@@ -220,47 +220,60 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
           const SizedBox(height: 30),
           Expanded(
             child: LineChart(LineChartData(
-                gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    getDrawingHorizontalLine: (value) =>
-                        FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
-                titlesData: FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 2,
-                minY:
-                    selectedItem.historyPoints.reduce((a, b) => a < b ? a : b) *
-                        0.95,
-                maxY:
-                    selectedItem.historyPoints.reduce((a, b) => a > b ? a : b) *
-                        1.05,
-                lineBarsData: [
-                  LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      color: color,
-                      barWidth: 4,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, barData, index) =>
-                              FlDotCirclePainter(
-                                  radius: 6,
-                                  color: color,
-                                  strokeWidth: 3,
-                                  strokeColor: Colors.white)),
-                      belowBarData: BarAreaData(
-                          show: true,
-                          gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                color.withOpacity(0.2),
-                                color.withOpacity(0.0)
-                              ])))
-                ])).animate().slideX(
-                duration: 600.ms, curve: Curves.easeOutQuint),
+              gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) =>
+                      FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
+              titlesData: FlTitlesData(show: false),
+              borderData: FlBorderData(show: false),
+              minX: 0,
+              maxX: 2,
+              minY: selectedItem.historyPoints.reduce((a, b) => a < b ? a : b) *
+                  0.95,
+              maxY: selectedItem.historyPoints.reduce((a, b) => a > b ? a : b) *
+                  1.05,
+              lineBarsData: [
+                LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    color: color,
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) =>
+                            FlDotCirclePainter(
+                                radius: 6,
+                                color: color,
+                                strokeWidth: 3,
+                                strokeColor: Colors.white)),
+                    belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              color.withOpacity(0.2),
+                              color.withOpacity(0.0)
+                            ]))),
+              ],
+              lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                tooltipRoundedRadius: 8,
+                getTooltipItems: (List<LineBarSpot> pageSpots) {
+                  return pageSpots.map((spot) {
+                    return LineTooltipItem(
+                      '₹${spot.y.toStringAsFixed(2)}',
+                      const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  }).toList();
+                },
+              )),
+            )).animate().slideX(duration: 600.ms, curve: Curves.easeOutQuint),
           ),
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -423,88 +436,106 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
   }
 
   Widget _buildNewsSection() {
+    if (_news.isEmpty) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("BREAKING NEWS",
-              style: GoogleFonts.bebasNeue(
-                  color: Colors.redAccent, fontSize: 24, letterSpacing: 1.2)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("BREAKING NEWS",
+                    style: GoogleFonts.bebasNeue(
+                        color: Colors.red, fontSize: 24, letterSpacing: 1.2)),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 220,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _news.length,
-              itemBuilder: (context, index) {
-                final item = _news[index];
-                return Container(
-                  width: 250,
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4))
-                      ],
-                      image: item.imageUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(item.imageUrl),
-                              fit: BoxFit.cover,
-                              colorFilter: ColorFilter.mode(
-                                  Colors.black.withOpacity(0.3),
-                                  BlendMode.srcOver)) // Lighter overlay
-                          : null),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => launchUrl(Uri.parse(item.link)),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(4)),
-                              child: Text(item.source,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(item.title,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.dmSans(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    shadows: [
-                                      Shadow(
-                                          blurRadius: 10,
-                                          color: Colors.black.withOpacity(0.8))
-                                    ],
-                                    height: 1.3)),
-                          ],
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _news.length,
+            separatorBuilder: (context, index) => Divider(
+              color: Colors.grey.shade200,
+              height: 24,
+            ),
+            itemBuilder: (context, index) {
+              final item = _news[index];
+              return InkWell(
+                onTap: () => launchUrl(Uri.parse(item.link)),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Image
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        item.imageUrl,
+                        width: 100,
+                        height: 70,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 100,
+                          height: 70,
+                          color: Colors.grey.shade200,
+                          child:
+                              const Icon(Icons.image_not_supported, size: 20),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          )
+                    const SizedBox(width: 12),
+                    // Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.dmSans(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Text(
+                                item.source,
+                                style: GoogleFonts.dmSans(
+                                  color: Colors.red,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.circle,
+                                  size: 4, color: Colors.grey),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Just Now", // Placeholder since we don't have time
+                                style: GoogleFonts.dmSans(
+                                  color: Colors.grey,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

@@ -145,60 +145,85 @@ class MarketIntelligenceService {
     ];
   }
 
+  // Store the raw JSON data for AI analysis
+  List<Map<String, dynamic>> scrapedNewsJson = [];
+
   // --- Real Data: Krishi Jagran News Scraping ---
   Future<List<NewsItem>> fetchAgriNews() async {
     try {
       const url = "https://krishijagran.com/industry-news";
-      final response = await _client.get(Uri.parse(url));
+      final response = await _client.get(
+        Uri.parse(url),
+        headers: {
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+        },
+      );
 
       if (response.statusCode == 200) {
         var document = parse(response.body);
-        var articles = document.querySelectorAll(
-            'div.news-card, div.h-news-card'); // Adjust selector based on site structure inspection
+        var articles =
+            document.querySelectorAll('div.main-post, div.post, div.nc-item');
 
-        // Fallback selectors if site changed - Generic article lookup
+        // Fallback
         if (articles.isEmpty) {
           articles = document.querySelectorAll('article');
         }
 
         List<NewsItem> news = [];
+        List<Map<String, dynamic>> tempJsonList = [];
 
-        // Basic parsing - HTML structure varies, so robust error handling needed per item
-        for (var article in articles.take(5)) {
+        for (var article in articles.take(15)) {
           try {
             var titleEl =
                 article.querySelector('h2') ?? article.querySelector('h3');
             var linkEl = article.querySelector('a');
             var imgEl = article.querySelector('img');
 
-            String title = titleEl?.text.trim() ?? "Agri News Update";
+            String title = titleEl?.text.trim() ?? "";
             String link = linkEl?.attributes['href'] ?? "";
-            if (!link.startsWith('http'))
+            if (link.isNotEmpty && !link.startsWith('http')) {
               link = "https://krishijagran.com$link";
+            }
 
             String img =
                 imgEl?.attributes['data-src'] ?? imgEl?.attributes['src'] ?? "";
-            if (img.isNotEmpty && !img.startsWith('http'))
+            if (img.isNotEmpty && !img.startsWith('http')) {
               img = "https://krishijagran.com$img";
+            }
 
             if (title.isNotEmpty) {
+              // Add to NewsItem list
               news.add(NewsItem(
                   title: title,
                   imageUrl: img,
                   link: link,
                   source: "Krishi Jagran"));
+
+              // Add to JSON list
+              tempJsonList.add({
+                "title": title,
+                "poster": img,
+                "link": link,
+              });
             }
           } catch (e) {
             continue;
           }
         }
 
-        if (news.isEmpty) throw Exception("No news found");
-        return news;
+        if (news.isNotEmpty) {
+          scrapedNewsJson = tempJsonList; // Update class property
+          print("Scraped ${news.length} news items. JSON stored.");
+          return news;
+        } else {
+          throw Exception("No news found");
+        }
       } else {
-        throw Exception("News Fetch Failed");
+        throw Exception("News Fetch Failed: ${response.statusCode}");
       }
     } catch (e) {
+      print("Scraping Error: $e");
       return _getMockNews();
     }
   }
