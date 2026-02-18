@@ -19,7 +19,10 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
     super.initState();
     // Load crop data if not loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CropPlanningProvider>().loadCropData();
+      final provider = context.read<CropPlanningProvider>();
+      if (provider.cropDataset.isEmpty) {
+        provider.loadCropData();
+      }
     });
   }
 

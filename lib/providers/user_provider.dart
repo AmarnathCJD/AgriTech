@@ -41,13 +41,31 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> updateUserProfile(
-      String name, double acres, int experience) async {
+  Future<bool> updateUserProfile(String name, double acres, int experience,
+      {List<String>? newCrops}) async {
     _isLoading = true;
     notifyListeners();
-    final success = await _userService.updateProfile(name, acres, experience);
+    bool success = await _userService.updateProfile(name, acres, experience);
+
+    if (newCrops != null) {
+      bool cropsSuccess = await _userService.updateCrops(newCrops);
+      success = success && cropsSuccess; // Only fully successful if both work
+    }
+
     if (success) {
       _user = await _userService.getCurrentUser(); // Refresh local data
+    }
+    _isLoading = false;
+    notifyListeners();
+    return success;
+  }
+
+  Future<bool> updateUserCrops(List<String> crops) async {
+    _isLoading = true;
+    notifyListeners();
+    bool success = await _userService.updateCrops(crops);
+    if (success) {
+      _user = await _userService.getCurrentUser();
     }
     _isLoading = false;
     notifyListeners();

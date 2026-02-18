@@ -28,9 +28,6 @@ class ProfileScreen extends StatelessWidget {
             ? List<String>.from(user!['crops_rotation'])
             : ["Wheat", "Rice"];
 
-        final primaryCrop = crops.isNotEmpty ? crops[0] : "Mixed";
-        final secondaryCrop = crops.length > 1 ? crops[1] : "Vegetables";
-
         // Determine verification status: Verified if location is set
         final isVerified = currentLocation != "Fetching..." &&
             currentLocation != "Set Location";
@@ -215,7 +212,8 @@ class ProfileScreen extends StatelessWidget {
                           "Total Land", "$acres Acres", Icons.landscape),
                       _buildStatCard(
                           "Experience", "$experience Years", Icons.history_edu),
-                      _buildStatCard("Platform", "Member", Icons.star_outline),
+                      _buildStatCard(
+                          "Member", "Since 2026", Icons.star_outline),
                     ],
                   ),
                 ),
@@ -246,11 +244,45 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _buildDetailRow("Primary Crop", primaryCrop,
-                                Icons.local_fire_department, Colors.red),
-                            const Divider(height: 24),
-                            _buildDetailRow("Secondary Crop", secondaryCrop,
-                                Icons.grass, Colors.grey),
+                            // Crops Section Header
+                            InkWell(
+                              onTap: () =>
+                                  _showEditCropsDialog(context, userProvider),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.grass,
+                                          color: Colors.green, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text("Crops in Rotation",
+                                          style: GoogleFonts.dmSans(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15)),
+                                    ],
+                                  ),
+                                  const Icon(Icons.edit,
+                                      size: 18, color: Colors.grey),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Wrap(
+                                spacing: 8,
+                                children: crops
+                                    .map((c) => Chip(
+                                          label: Text(c,
+                                              style: GoogleFonts.dmSans(
+                                                  fontSize: 12)),
+                                          backgroundColor: Colors.green[50],
+                                        ))
+                                    .toList(),
+                              ),
+                            ),
                             const Divider(height: 24),
                             // Keeping soil/irrigation hardcoded or dependent on location for now as API doesn't return them yet
                             _buildDetailRow("Soil Type", "Loamy/Black",
@@ -270,8 +302,8 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showEditProfileDialog(BuildContext context, UserProvider provider) {
-    final user = provider.user;
+  void _showEditProfileDialog(BuildContext context, UserProvider userProvider) {
+    final user = userProvider.user;
     final nameCtrl = TextEditingController(text: user?['name'] ?? "");
     final acresCtrl =
         TextEditingController(text: user?['acres_land']?.toString() ?? "");
@@ -280,38 +312,62 @@ class ProfileScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Update Profile"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: "Full Name")),
-            TextField(
-                controller: acresCtrl,
-                decoration:
-                    const InputDecoration(labelText: "Land Size (Acres)"),
-                keyboardType: TextInputType.number),
-            TextField(
-                controller: expCtrl,
-                decoration:
-                    const InputDecoration(labelText: "Experience (Years)"),
-                keyboardType: TextInputType.number),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(
-              onPressed: () async {
-                final acres = double.tryParse(acresCtrl.text) ?? 0.0;
-                final exp = int.tryParse(expCtrl.text) ?? 0;
-                await provider.updateUserProfile(nameCtrl.text, acres, exp);
-                if (context.mounted) Navigator.pop(ctx);
-              },
-              child: const Text("Save"))
-        ],
+      barrierDismissible: false, // Prevent closing while loading
+      builder: (ctx) => Consumer<UserProvider>(
+        builder: (context, provider, child) {
+          return AlertDialog(
+            title: const Text("Update Profile"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: nameCtrl,
+                      decoration:
+                          const InputDecoration(labelText: "Full Name")),
+                  const SizedBox(height: 16),
+                  TextField(
+                      controller: acresCtrl,
+                      decoration:
+                          const InputDecoration(labelText: "Land Size (Acres)"),
+                      keyboardType: TextInputType.number),
+                  const SizedBox(height: 16),
+                  TextField(
+                      controller: expCtrl,
+                      decoration: const InputDecoration(
+                          labelText: "Experience (Years)"),
+                      keyboardType: TextInputType.number),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed:
+                      provider.isLoading ? null : () => Navigator.pop(ctx),
+                  child: const Text("Cancel")),
+              ElevatedButton(
+                  onPressed: provider.isLoading
+                      ? null
+                      : () async {
+                          final acres = double.tryParse(acresCtrl.text) ?? 0.0;
+                          final exp = int.tryParse(expCtrl.text) ?? 0;
+                          final success = await provider.updateUserProfile(
+                              nameCtrl.text, acres, exp);
+                          if (success && ctx.mounted) {
+                            Navigator.pop(ctx);
+                          }
+                        },
+                  child: provider.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text("Save"))
+            ],
+          );
+        },
       ),
     );
   }
@@ -366,6 +422,97 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  void _showEditCropsDialog(BuildContext context, UserProvider provider) {
+    final user = provider.user;
+    List<String> currentCrops = user?['crops_rotation'] != null
+        ? List<String>.from(user!['crops_rotation'])
+        : [];
+
+    final List<String> availableCrops = [
+      "Wheat",
+      "Rice",
+      "Maize",
+      "Cotton",
+      "Sugarcane",
+      "Soybean",
+      "Vegetables",
+      "Pulses",
+      "Tomato",
+      "Potato",
+      "Onion"
+    ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Consumer<UserProvider>(
+        builder: (context, provider, child) {
+          return StatefulBuilder(builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("Edit Crops Rotation"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 4.0,
+                      children: availableCrops.map((crop) {
+                        final isSelected = currentCrops.contains(crop);
+                        return FilterChip(
+                          label: Text(crop),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                currentCrops.add(crop);
+                              } else {
+                                currentCrops.remove(crop);
+                              }
+                            });
+                          },
+                          selectedColor: Colors.green[100],
+                          checkmarkColor: Colors.green[800],
+                          labelStyle: TextStyle(
+                              color: isSelected
+                                  ? Colors.green[900]
+                                  : Colors.black),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                    onPressed:
+                        provider.isLoading ? null : () => Navigator.pop(ctx),
+                    child: const Text("Cancel")),
+                ElevatedButton(
+                    onPressed: provider.isLoading
+                        ? null
+                        : () async {
+                            final success =
+                                await provider.updateUserCrops(currentCrops);
+                            if (success && ctx.mounted) {
+                              Navigator.pop(ctx);
+                            }
+                          },
+                    child: provider.isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Text("Save"))
+              ],
+            );
+          });
+        },
+      ),
     );
   }
 }
