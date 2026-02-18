@@ -16,7 +16,6 @@ dependencies:
   geocoding: ^3.0.0
   shared_preferences: ^2.3.2
   http: ^1.2.0
-  # Removed lucide_icons to avoid version conflicts, using standard Material Icons
 
 dev_dependencies:
   flutter_test:
