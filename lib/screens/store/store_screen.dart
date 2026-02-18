@@ -51,16 +51,40 @@ class _StoreScreenState extends State<StoreScreen> {
     _fetchProducts();
   }
 
+  String? _addingProductId;
+
   Future<void> _addToCart(Product product) async {
-    final success = await _storeService.addToCart(product.id, 1);
-    if (success) {
+    setState(() => _addingProductId = product.id);
+    try {
+      final success = await _storeService.addToCart(product.id, 1);
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product.name} added to cart'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to add to cart'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.name} added to cart')),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to add to cart')),
-      );
+    } finally {
+      if (mounted) {
+        setState(() => _addingProductId = null);
+      }
     }
   }
 
@@ -318,17 +342,37 @@ class _StoreScreenState extends State<StoreScreen> {
                                         SizedBox(
                                           width: double.infinity,
                                           height: 36,
-                                          child: ElevatedButton(
-                                            onPressed: () =>
-                                                _addToCart(product),
-                                            style: ElevatedButton.styleFrom(
-                                              padding: EdgeInsets.zero,
-                                              backgroundColor: Colors.green,
+                                          child: SizedBox(
+                                            width: double.infinity,
+                                            height: 36,
+                                            child: ElevatedButton(
+                                              onPressed: _addingProductId ==
+                                                      product.id
+                                                  ? null
+                                                  : () => _addToCart(product),
+                                              style: ElevatedButton.styleFrom(
+                                                padding: EdgeInsets.zero,
+                                                backgroundColor: Colors.green,
+                                                disabledBackgroundColor: Colors
+                                                    .green
+                                                    .withOpacity(0.6),
+                                              ),
+                                              child: _addingProductId ==
+                                                      product.id
+                                                  ? const SizedBox(
+                                                      height: 16,
+                                                      width: 16,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: Colors.white,
+                                                      ),
+                                                    )
+                                                  : const Text('Add to Cart',
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.white)),
                                             ),
-                                            child: const Text('Add to Cart',
-                                                style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.white)),
                                           ),
                                         ),
                                       ],
