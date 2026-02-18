@@ -74,6 +74,8 @@ class LocationProvider with ChangeNotifier {
 
     try {
       Position position = await _locationService.determinePosition();
+      _latitude = position.latitude;
+      _longitude = position.longitude;
       String address = await _locationService.getAddressFromPosition(position);
 
       _currentLocation = address;

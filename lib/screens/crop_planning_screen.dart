@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'widgets/chat_floating_button.dart';
 import '../providers/location_provider.dart';
 import '../providers/crop_planning_provider.dart';
 
@@ -37,6 +38,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
       body: planner.aiResults != null
           ? _buildResultsView(context, planner)
           : _buildInputForm(context, planner, locator),
+      floatingActionButton: const ChatFloatingButton(),
     );
   }
 
@@ -137,6 +139,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
             ),
           ],
         ),
+
         const SizedBox(height: 24),
 
         if (planner.error != null)
@@ -208,6 +211,10 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
   }
 
   Widget _buildDetailedCard(Map<String, dynamic> data, BuildContext context) {
+    int risk = data['risk_percent'] ?? 0;
+    bool isHighRisk = risk > 30;
+    String riskReason = data['risk_reason'] ?? "None";
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -235,10 +242,35 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
           title: Text(data['crop_name'],
               style: GoogleFonts.dmSans(
                   fontSize: 18, fontWeight: FontWeight.bold)),
-          subtitle: Text(
-              "Suitability Score: ${data['suitability_score_percent']}%",
-              style: GoogleFonts.dmSans(
-                  color: Colors.green.shade700, fontWeight: FontWeight.bold)),
+          subtitle: Row(
+            children: [
+              Text("Score: ${data['suitability_score_percent']}%",
+                  style: GoogleFonts.dmSans(
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isHighRisk ? Colors.red.shade50 : Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                      color: isHighRisk
+                          ? Colors.red.shade200
+                          : Colors.green.shade200),
+                ),
+                child: Text(
+                  isHighRisk ? "High Risk" : "Safe",
+                  style: GoogleFonts.dmSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isHighRisk
+                          ? Colors.red.shade700
+                          : Colors.green.shade700),
+                ),
+              ),
+            ],
+          ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             const Divider(height: 1),
@@ -258,8 +290,9 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
                 "${data['yield_potential_percent']}%",
                 Icons.spa_outlined,
                 Colors.green),
-            _buildStatRow("Risk Factor", "${data['risk_percent']}% Safe",
-                Icons.shield_outlined, Colors.purple),
+            // Risk Percentage Row
+            _buildStatRow("Risk Level", "$risk%", Icons.warning_amber_rounded,
+                isHighRisk ? Colors.red : Colors.grey),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -270,6 +303,44 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
                   style: GoogleFonts.dmSans(
                       fontSize: 13, color: Colors.grey.shade800, height: 1.5)),
             ),
+            // Potential Issues Box (Only if Risk > 30)
+            if (isHighRisk) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade100),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.report_problem_outlined,
+                        size: 18, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Risk Factor",
+                              style: GoogleFonts.dmSans(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red.shade900,
+                                  fontSize: 12)),
+                          Text(riskReason,
+                              style: GoogleFonts.dmSans(
+                                  color: Colors.red.shade800,
+                                  fontSize: 12,
+                                  height: 1.3)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

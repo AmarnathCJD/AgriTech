@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../widgets/chat_floating_button.dart';
 import 'package:intl/intl.dart';
 import '../../providers/harvest_provider.dart';
 import '../../providers/location_provider.dart';
@@ -262,6 +263,7 @@ class _HarvestTimingScreenState extends State<HarvestTimingScreen> {
           ],
         ),
       ),
+      floatingActionButton: const ChatFloatingButton(),
     );
   }
 }
