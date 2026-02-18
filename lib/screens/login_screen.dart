@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../theme/app_theme.dart';
-import '../services/mock_backend.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
+import '../services/auth_service.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,29 +16,53 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _mobileController = TextEditingController();
-  final _otpController = TextEditingController();
-  bool _otpSent = false;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAutoLogin();
+    });
+  }
+
+  void _checkAutoLogin() async {
+    // Check if user is already logged in
+    final isLoggedIn = await context.read<UserProvider>().tryAutoLogin();
+    if (isLoggedIn && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
+  }
+
   void _handleLogin() async {
+    if (_mobileController.text.isEmpty || _mobileController.text.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid mobile number")),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    if (!_otpSent) {
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _otpSent = true;
-        _isLoading = false;
-      });
+    // Call UserProvider to register/login
+    final success = await context
+        .read<UserProvider>()
+        .loginOrRegister(_mobileController.text);
+
+    if (success && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
     } else {
-      final success = await MockBackend()
-          .login(_mobileController.text, _otpController.text);
-      if (success && mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      } else {
+      if (mounted) {
         setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login Failed. Please try again.")),
+        );
       }
     }
   }
@@ -106,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _otpSent ? "Verify Mobile" : "Login to your account",
+                          "Login / Register",
                           style: GoogleFonts.dmSans(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -115,9 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _otpSent
-                              ? "Enter the OTP sent to ${_mobileController.text}"
-                              : "Enter your mobile number to get started",
+                          "Enter your mobile number to get started",
                           style: GoogleFonts.dmSans(
                               color: Colors.grey[600], fontSize: 14),
                         ),
@@ -125,7 +148,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextField(
                           controller: _mobileController,
                           keyboardType: TextInputType.phone,
-                          enabled: !_otpSent,
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w500),
                           decoration: InputDecoration(
@@ -137,25 +159,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             fillColor: Colors.grey[50],
                           ),
                         ),
-                        if (_otpSent) ...[
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _otpController,
-                            keyboardType: TextInputType.number,
-                            style: const TextStyle(
-                                fontSize: 18,
-                                letterSpacing: 4,
-                                fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                            decoration: InputDecoration(
-                              labelText: "Enter OTP",
-                              prefixIcon:
-                                  const Icon(Icons.lock_outline_rounded),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                            ),
-                          ).animate().fadeIn().slideY(begin: 0.2, end: 0),
-                        ],
                       ],
                     ),
 
@@ -172,25 +175,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: 24,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Colors.white))
-                            : Text(
-                                _otpSent ? "VERIFY & LOGIN" : "SEND OTP",
-                                style: const TextStyle(
-                                    fontSize: 16, letterSpacing: 1),
+                            : const Text(
+                                "CONTINUE",
+                                style:
+                                    TextStyle(fontSize: 16, letterSpacing: 1),
                               ),
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     Center(
-                      child: TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          "New here? Create Account",
-                          style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                      ),
-                    ),
+                        child: Text("No OTP needed for beta testing",
+                            style: GoogleFonts.dmSans(
+                                fontSize: 12, color: Colors.grey[400])))
                   ],
                 ),
               ),
