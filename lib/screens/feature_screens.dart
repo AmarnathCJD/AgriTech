@@ -1,64 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 
 // Market Intelligence Screen moved to lib/screens/market_intelligence_screen.dart
 
-// --- Smart Harvest Timing Screen ---
-class HarvestTimingScreen extends StatelessWidget {
-  const HarvestTimingScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5F2),
-      appBar: AppBar(
-          title: const Text("Harvest Timing"),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 0),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.wb_sunny_rounded, size: 80, color: Colors.orange),
-            const SizedBox(height: 24),
-            Text("Optimal Harvest Window",
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text("Nov 15 - Nov 20",
-                style: GoogleFonts.playfairDisplay(
-                    fontSize: 32, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(horizontal: 32),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.blue.withOpacity(0.2)),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.blue.withOpacity(0.05), blurRadius: 10)
-                ],
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Colors.blue),
-                  const SizedBox(width: 16),
-                  Expanded(
-                      child: Text(
-                          "Rain expected on Nov 22. Better to harvest early.",
-                          style: GoogleFonts.dmSans())),
-                ],
-              ),
-            ),
-          ],
-        ).animate().scale(),
-      ),
-    );
-  }
-}
+export 'harvest/harvest_timing_screen.dart';
 
 // --- Risk Calculator Screen ---
 class RiskCalculatorScreen extends StatelessWidget {
