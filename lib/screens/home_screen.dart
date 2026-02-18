@@ -1,3 +1,4 @@
+import 'package:agri_tech_app/screens/market_intelligence_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
