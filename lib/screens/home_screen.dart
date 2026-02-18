@@ -12,7 +12,6 @@ import '../services/location_service.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
 import '../providers/localization_provider.dart';
-import 'equipment/equipment_listing_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
