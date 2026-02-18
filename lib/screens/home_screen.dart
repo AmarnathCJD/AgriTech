@@ -5,9 +5,115 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import 'feature_screens.dart';
 import 'additional_features_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/location_provider.dart';
+import '../services/location_service.dart'; // Import LocationSuggestion
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LocationProvider>().fetchUserLocation();
+    });
+  }
+
+  void _showLocationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Select Location",
+            style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Search for your city or area",
+                style:
+                    GoogleFonts.dmSans(color: Colors.grey[600], fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              Autocomplete<LocationSuggestion>(
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  if (textEditingValue.text.length < 3) {
+                    return const Iterable<LocationSuggestion>.empty();
+                  }
+                  return context
+                      .read<LocationProvider>()
+                      .searchLocations(textEditingValue.text);
+                },
+                displayStringForOption: (LocationSuggestion option) =>
+                    option.displayName,
+                onSelected: (LocationSuggestion selection) {
+                  context
+                      .read<LocationProvider>()
+                      .setLocationFromSuggestion(selection);
+                  Navigator.pop(ctx);
+                },
+                fieldViewBuilder: (BuildContext context,
+                    TextEditingController textEditingController,
+                    FocusNode focusNode,
+                    VoidCallback onFieldSubmitted) {
+                  return TextField(
+                    controller: textEditingController,
+                    focusNode: focusNode,
+                    decoration: const InputDecoration(
+                      hintText: "Start typing (e.g. New Delhi)",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  );
+                },
+                optionsViewBuilder: (BuildContext context,
+                    AutocompleteOnSelected<LocationSuggestion> onSelected,
+                    Iterable<LocationSuggestion> options) {
+                  return Align(
+                    alignment: Alignment.topLeft,
+                    child: Material(
+                      elevation: 4.0,
+                      child: SizedBox(
+                        height: 200.0,
+                        width: 250, // Constrain width
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(8.0),
+                          itemCount: options.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final LocationSuggestion option =
+                                options.elementAt(index);
+                            return ListTile(
+                              title: Text(option.displayName),
+                              onTap: () {
+                                onSelected(option);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,26 +150,46 @@ class HomeScreen extends StatelessWidget {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
-          child: Container(
+          child: Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on, color: Colors.white70, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  "Satara, Maharashtra",
-                  style: GoogleFonts.dmSans(
-                      color: Colors.white, fontWeight: FontWeight.w500),
-                ),
-                const Spacer(),
-                Text(
-                  "28°C",
-                  style: GoogleFonts.dmSans(
-                      color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.wb_sunny, color: Colors.amber, size: 16),
-              ],
+            child: Consumer<LocationProvider>(
+              builder: (context, provider, child) {
+                return Row(
+                  children: [
+                    const Icon(Icons.location_on,
+                        color: Colors.white70, size: 16),
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: () => _showLocationDialog(context),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            provider.isLoading
+                                ? "Locating..."
+                                : (provider.error != null
+                                    ? "Set Location"
+                                    : provider.currentLocation),
+                            style: GoogleFonts.dmSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500),
+                          ),
+                          const Icon(Icons.arrow_drop_down,
+                              color: Colors.white70, size: 20),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      provider.temperature,
+                      style: GoogleFonts.dmSans(
+                          color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.wb_sunny, color: Colors.amber, size: 16),
+                  ],
+                );
+              },
             ),
           ),
         ),

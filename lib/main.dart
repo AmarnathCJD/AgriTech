@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/location_provider.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
-  runApp(const AgriTechApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+      ],
+      child: const AgriTechApp(),
+    ),
+  );
 }
 
 class AgriTechApp extends StatelessWidget {
