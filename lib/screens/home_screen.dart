@@ -20,6 +20,7 @@ import '../providers/localization_provider.dart';
 import 'live_crop_protection_screen.dart';
 import 'government_schemes_screen.dart';
 import 'community/community_screen.dart';
+import 'store/store_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -509,108 +510,101 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 24),
 
-                // Section 3: Smart Advisory / Weather Insight
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: _weatherAlert != null
-                        ? _weatherAlert!['gradient'] as Gradient
-                        : const LinearGradient(
-                            colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                // Section 3: Farmora Store Banner
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StoreScreen()),
                   ),
-                  child: Stack(
-                    children: [
-                      // Background Pattern (Decorative)
-                      Positioned(
-                        right: -20,
-                        top: -20,
-                        child: Icon(
-                          _weatherAlert != null
-                              ? _weatherAlert!['icon']
-                              : Icons.cloud,
-                          size: 150,
-                          color: Colors.white.withOpacity(0.1),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2E7D32).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 8),
                         ),
-                      ),
-
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: _isWeatherLoading
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                    color: Colors.white))
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(
-                                                Icons.warning_amber_rounded,
-                                                color: Colors.amberAccent,
-                                                size: 16),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              "48H FORECAST",
-                                              style: GoogleFonts.dmSans(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 10,
-                                                letterSpacing: 1,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: -30,
+                          bottom: -30,
+                          child: Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 150,
+                            color: Colors.white.withOpacity(0.15),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "New Feature",
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                    letterSpacing: 1,
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    _weatherAlert != null
-                                        ? _weatherAlert!['title']
-                                        : "Fetching Weather...",
-                                    style: GoogleFonts.playfairDisplay(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _weatherAlert != null
-                                        ? _weatherAlert!['subtitle']
-                                        : "Updating your local forecast...",
-                                    style: GoogleFonts.dmSans(
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontSize: 14,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                      ),
-                    ],
+                              const SizedBox(height: 16),
+                              Text(
+                                "Farmora Store",
+                                style: GoogleFonts.playfairDisplay(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Get high-quality fertilizers, seeds, and tools delivered to your farm.",
+                                style: GoogleFonts.dmSans(
+                                  color: Colors.white.withOpacity(0.95),
+                                  fontSize: 14,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Text(
+                                  "Shop Now",
+                                  style: GoogleFonts.dmSans(
+                                    color: const Color(0xFF2E7D32),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
