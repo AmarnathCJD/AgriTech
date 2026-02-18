@@ -11,7 +11,7 @@ class GeminiService {
       throw Exception("GEMINI_API_KEY is missing in .env file");
     }
     _model = GenerativeModel(
-        model: 'gemini-latest-flash',
+        model: 'gemini-flash-latest',
         apiKey: apiKey,
         generationConfig:
             GenerationConfig(responseMimeType: 'application/json'));
@@ -26,6 +26,10 @@ class GeminiService {
     try {
       final prompt = _buildPrompt(
           userInputs, weatherSummary, districtMarketData, cropDataset);
+
+      print("--- GENERATED GEMINI PROMPT ---");
+      _printLog(prompt);
+      print("-------------------------------");
 
       final content = [Content.text(prompt)];
       final response = await _model.generateContent(content);
@@ -46,6 +50,11 @@ class GeminiService {
     }
   }
 
+  void _printLog(String text) {
+    final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
+    pattern.allMatches(text).forEach((match) => print(match.group(0)));
+  }
+
   String _buildPrompt(
     Map<String, dynamic> inputs,
     Map<String, dynamic> weather,
@@ -57,7 +66,7 @@ class GeminiService {
     Analyze the following data and recommend the top 3 most suitable crops.
 
     # FARM DATA:
-    - Location: ${weather['location_name'] ?? 'Unknown'}
+    - Location: ${inputs['location'] ?? 'Unknown'}
     - Soil Type: ${inputs['soil_type']}
     - Soil pH: ${inputs['soil_ph'] ?? 'N/A'}
     - Land Size: ${inputs['land_size']} acres
@@ -66,18 +75,20 @@ class GeminiService {
 
     # WEATHER FORECAST (Next 14 Days):
     - Avg Temp: ${weather['avg_temp']}
-    - Total Rainfall: ${weather['total_rainfall']}
-    - Condition: ${weather['condition']}
+    - Total Rainfall: ${weather['total_rainfall_mm']}mm
+
+    # MARKET TRENDS (Current District Prices):
+    ${jsonEncode(market['commodities'])}
 
     # AVAILABLE CROP DATASET (JSON):
     ${jsonEncode(crops.take(15).toList())} 
     (Note: This is a subset of local crops. You may recommend others if highly suitable but prioritize these if they fit.)
 
     # TASK:
-    1. Filter crops based on soil type, season, and water availability.
-    2. detailed reasoning for each recommendation.
-    3. Calculate a 'suitability_score_percent' (0-100).
-    4. Provide specific advice for the farmer.
+    1. The user's previous crop was "${inputs['target_crop'] ?? 'None'}". Evaluate if it is suitable to plant AGAIN in the upcoming season. Include it in the list with a recommendation.
+    2. Recommend 2-3 other most suitable crops based on soil, season, and market trends.
+    3. Generate a 'suitability_score_percent' (0-100) for each.
+    4. Provide specific risk warnings if risk > 30%.
 
     # OUTPUT FORMAT (Strict JSON):
     {
@@ -89,6 +100,7 @@ class GeminiService {
           "market_momentum_percent": 80,
           "yield_potential_percent": 95,
           "risk_percent": 10,
+          "risk_reason": "High humidity may cause fungal issues.",
           "harvest_duration_days": 120,
           "summary_reasoning": "Detailed explanation...",
           "recommendation": "Highly Recommended"

@@ -20,10 +20,15 @@ class LocationProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  double? _latitude;
+  double? _longitude;
+
   String get currentLocation => _currentLocation;
   String get temperature => _temperature;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  double? get latitude => _latitude;
+  double? get longitude => _longitude;
 
   Future<void> _loadSavedData() async {
     try {
@@ -60,9 +65,10 @@ class LocationProvider with ChangeNotifier {
 
     try {
       Position position = await _locationService.determinePosition();
+      _latitude = position.latitude;
+      _longitude = position.longitude;
       String address = await _locationService.getAddressFromPosition(position);
 
-      _currentLocation = address;
       _currentLocation = address;
 
       // Fetch weather using coordinates
@@ -96,6 +102,8 @@ class LocationProvider with ChangeNotifier {
     try {
       List<Location> locations = await locationFromAddress(location);
       if (locations.isNotEmpty) {
+        _latitude = locations[0].latitude;
+        _longitude = locations[0].longitude;
         String temp = await _weatherService.fetchTemperature(
             locations[0].latitude, locations[0].longitude);
         _temperature = temp;
@@ -119,6 +127,8 @@ class LocationProvider with ChangeNotifier {
     notifyListeners();
 
     _currentLocation = suggestion.displayName;
+    _latitude = suggestion.latitude;
+    _longitude = suggestion.longitude;
 
     try {
       String temp = await _weatherService.fetchTemperature(
