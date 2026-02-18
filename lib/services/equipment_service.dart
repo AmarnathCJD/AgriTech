@@ -5,7 +5,7 @@ import '../models/equipment_model.dart';
 import 'dart:developer';
 
 class EquipmentService {
-  String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://127.0.0.1:8000';
+  String get baseUrl => dotenv.env['BACKEND_URL']!;
 
   Future<List<Equipment>> fetchNearbyEquipment({
     required double lat,

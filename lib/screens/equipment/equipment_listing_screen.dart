@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/user_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
@@ -103,7 +105,12 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          if (!AuthService().isLoggedIn) {
+          final userProvider =
+              Provider.of<UserProvider>(context, listen: false);
+          final isLoggedIn =
+              userProvider.user != null || AuthService().isLoggedIn;
+
+          if (!isLoggedIn) {
             // Navigate to Login first
             await Navigator.push(
                 context,
