@@ -8,7 +8,7 @@ import 'feature_screens.dart';
 import 'additional_features_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
-import 'crop_planning_screen.dart';
+import 'crop_planning_screen.dart' hide CropPlanningScreen;
 import '../services/location_service.dart'; // Import LocationSuggestion
 
 class HomeScreen extends StatefulWidget {
