@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/user_provider.dart';
 import '../providers/location_provider.dart';
+import '../services/chat_gemini_service.dart';
+import 'package:intl/intl.dart';
 
 class LiveCropProtectionScreen extends StatefulWidget {
   const LiveCropProtectionScreen({super.key});
@@ -86,6 +88,48 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
         _monitoredCrops = risks;
         _isLoading = false;
       });
+
+      // Force UI update to show local data immediately
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // 6. Gemini Integration (Batch)
+      final geminiService = ChatGeminiService();
+
+      // Prepare batch input
+      final List<Map<String, dynamic>> batchInput = risks.map((risk) {
+        return {
+          "crop_name": risk.cropName,
+          "risk_score": risk.riskScore,
+          "primary_threat": risk.primaryConstraint,
+          "heat_risk": risk.heatRisk,
+          "flood_risk": risk.floodRisk,
+          "drought_risk": risk.droughtRisk,
+          "disease_risk": risk.diseaseRisk
+        };
+      }).toList();
+
+      try {
+        final batchAdvisories =
+            await geminiService.getBatchStructuredAdvisory(batchInput);
+
+        final enhancedRisks = risks.map((risk) {
+          final summary = batchAdvisories[risk.cropName];
+          if (summary != null) {
+            return risk.copyWith(
+                geminiAdvisory: summary as Map<String, dynamic>);
+          }
+          return risk;
+        }).toList();
+
+        if (!mounted) return;
+        setState(() {
+          _monitoredCrops = enhancedRisks;
+          // _isLoading is already false
+        });
+      } catch (e) {
+        print("Batch Error: $e");
+        // Failure silently keeps local results
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -253,7 +297,7 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
     }
     if (floodRisk > maxR) {
       maxR = floodRisk;
-      primaryRisk = "Flood Risk";
+      primaryRisk = "Rainfall Risk";
     }
     if (droughtRisk > maxR) {
       maxR = droughtRisk;
@@ -287,21 +331,25 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
         primaryConstraint: primaryRisk,
         advice: allAdvice,
         weatherSummary:
-            "Avg: ${avgTemp7d.toStringAsFixed(1)}°C, Rain: ${rainfall7d.toStringAsFixed(1)}mm (7d)");
+            "Avg: ${avgTemp7d.toStringAsFixed(1)}°C, Rain: ${rainfall7d.toStringAsFixed(1)}mm (7d)",
+        heatRisk: heatRisk,
+        floodRisk: floodRisk,
+        droughtRisk: droughtRisk,
+        diseaseRisk: diseaseRisk);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Dark, distinct theme
+      backgroundColor: const Color(0xFFF8F5F2), // Light theme
       appBar: AppBar(
         title: Text("Live Crop Protection",
             style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.bold, color: Colors.white)),
+                fontWeight: FontWeight.bold, color: Colors.black)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: _isLoading
           ? const Center(
@@ -317,8 +365,8 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
   Widget _buildDashboard() {
     return RefreshIndicator(
       onRefresh: _initializeData,
-      color: Colors.greenAccent,
-      backgroundColor: const Color(0xFF1E1E1E),
+      color: Colors.green,
+      backgroundColor: const Color(0xFFF8F5F2),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -354,9 +402,15 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-          color: statusColor.withOpacity(0.1),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: statusColor.withOpacity(0.5))),
+          border: Border.all(color: statusColor.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ]),
       child: Row(
         children: [
           Icon(icon, color: statusColor, size: 32),
@@ -366,7 +420,7 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
             children: [
               Text("SYSTEM STATUS",
                   style: GoogleFonts.dmSans(
-                      color: Colors.grey, fontSize: 10)),
+                      color: Colors.grey[600], fontSize: 10)),
               Text(statusText,
                   style: GoogleFonts.dmSans(
                       color: statusColor,
@@ -385,26 +439,33 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
       riskColor = Colors.redAccent;
     else if (crop.riskScore > 30) riskColor = Colors.orangeAccent;
 
+    // Use risk-based color for border/accent, but white for card bg
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2))
+          ],
           border: Border.all(color: riskColor.withOpacity(0.3))),
       child: Theme(
-        data: ThemeData.dark().copyWith(
+        data: ThemeData.light().copyWith(
             dividerColor: Colors.transparent,
-            colorScheme: ColorScheme.dark(primary: riskColor)),
+            colorScheme: ColorScheme.light(primary: riskColor)),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.all(16),
           leading: CircularProgressIndicator(
             value: crop.riskScore / 100,
-            backgroundColor: Colors.grey[800],
+            backgroundColor: Colors.grey[100],
             color: riskColor,
           ),
           title: Text(crop.cropName,
               style: GoogleFonts.dmSans(
-                  color: Colors.white,
+                  color: Colors.black87,
                   fontSize: 18,
                   fontWeight: FontWeight.bold)),
           subtitle: Column(
@@ -418,7 +479,7 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
                       fontWeight: FontWeight.bold)),
               Text(crop.weatherSummary,
                   style: GoogleFonts.dmSans(
-                      color: Colors.grey, fontSize: 10)),
+                      color: Colors.grey[600], fontSize: 10)),
             ],
           ),
           children: [
@@ -427,26 +488,65 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("ACTION PLAN:",
-                      style: GoogleFonts.dmSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12)),
-                  const SizedBox(height: 8),
-                  ...crop.advice.map((a) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.arrow_right, color: riskColor, size: 16),
-                            Expanded(
-                                child: Text(a,
-                                    style: GoogleFonts.dmSans(
-                                        color: Colors.grey[300],
-                                        fontSize: 12))),
-                          ],
-                        ),
-                      )),
+                  if (crop.geminiAdvisory != null) ...[
+                    Text(crop.geminiAdvisory!['advisory_title'] ?? "Advisory",
+                        style: GoogleFonts.dmSans(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.blueGrey[800])),
+                    const SizedBox(height: 4),
+                    Text(crop.geminiAdvisory!['advisory_summary'] ?? "",
+                        style: GoogleFonts.dmSans(
+                            color: Colors.grey[700], fontSize: 13)),
+                    const SizedBox(height: 12),
+                    Text("RECOMMENDED ACTIONS:",
+                        style: GoogleFonts.dmSans(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11)),
+                    const SizedBox(height: 6),
+                    ...(crop.geminiAdvisory!['recommended_actions'] as List? ??
+                            [])
+                        .map((action) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.check_circle_outline,
+                                      color: riskColor, size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                      child: Text(action.toString(),
+                                          style: GoogleFonts.dmSans(
+                                              color: Colors.grey[800],
+                                              fontSize: 13))),
+                                ],
+                              ),
+                            ))
+                  ] else ...[
+                    // Fallback to rule-based advice
+                    Text("ACTION PLAN:",
+                        style: GoogleFonts.dmSans(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12)),
+                    const SizedBox(height: 8),
+                    ...crop.advice.map((a) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.arrow_right,
+                                  color: riskColor, size: 16),
+                              Expanded(
+                                  child: Text(a,
+                                      style: GoogleFonts.dmSans(
+                                          color: Colors.grey[800],
+                                          fontSize: 12))),
+                            ],
+                          ),
+                        ))
+                  ],
                   const SizedBox(height: 16),
                   _buildTimeline(),
                 ],
@@ -459,21 +559,39 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
   }
 
   Widget _buildTimeline() {
-    // Mock timeline viz - red/yellow/green dashes
-    return Row(
-      children: List.generate(7, (index) {
-        return Expanded(
-          child: Container(
-            height: 4,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-                color: index % 3 == 0
-                    ? Colors.redAccent.withOpacity(0.5)
-                    : Colors.greenAccent.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(2)),
-          ),
-        );
-      }),
+    // Timeline with days
+    final now = DateTime.now();
+    return Column(
+      children: [
+        Row(
+          children: List.generate(7, (index) {
+            return Expanded(
+              child: Container(
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                    color: index % 3 == 0
+                        ? Colors.redAccent.withOpacity(0.6)
+                        : Colors.green.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(3)),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: List.generate(7, (index) {
+            final day = now.add(Duration(days: index));
+            return Expanded(
+                child: Text(DateFormat('E').format(day), // Mon, Tue...
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold)));
+          }),
+        )
+      ],
     );
   }
 
@@ -485,7 +603,7 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
           const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
           const SizedBox(height: 16),
           Text(_error ?? "Unknown Error",
-              style: const TextStyle(color: Colors.white)),
+              style: const TextStyle(color: Colors.black87)),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _initializeData,
@@ -504,11 +622,10 @@ class _LiveCropProtectionScreenState extends State<LiveCropProtectionScreen> {
           const Icon(Icons.grass, color: Colors.grey, size: 48),
           const SizedBox(height: 16),
           Text("No active crops found.",
-              style: GoogleFonts.dmSans(color: Colors.white)),
+              style: GoogleFonts.dmSans(color: Colors.black87)),
           const SizedBox(height: 8),
           Text("Add crops to your rotation in Profile.",
-              style:
-                  GoogleFonts.dmSans(color: Colors.grey, fontSize: 12)),
+              style: GoogleFonts.dmSans(color: Colors.grey, fontSize: 12)),
         ],
       ),
     );
@@ -521,11 +638,37 @@ class CropRiskModel {
   final String primaryConstraint;
   final List<String> advice;
   final String weatherSummary;
+  final Map<String, dynamic>? geminiAdvisory;
+  final double heatRisk;
+  final double floodRisk;
+  final double droughtRisk;
+  final double diseaseRisk;
 
-  CropRiskModel(
-      {required this.cropName,
-      required this.riskScore,
-      required this.primaryConstraint,
-      required this.advice,
-      required this.weatherSummary});
+  CropRiskModel({
+    required this.cropName,
+    required this.riskScore,
+    required this.primaryConstraint,
+    required this.advice,
+    required this.weatherSummary,
+    this.geminiAdvisory,
+    this.heatRisk = 0,
+    this.floodRisk = 0,
+    this.droughtRisk = 0,
+    this.diseaseRisk = 0,
+  });
+
+  CropRiskModel copyWith({Map<String, dynamic>? geminiAdvisory}) {
+    return CropRiskModel(
+      cropName: this.cropName,
+      riskScore: this.riskScore,
+      primaryConstraint: this.primaryConstraint,
+      advice: this.advice,
+      weatherSummary: this.weatherSummary,
+      geminiAdvisory: geminiAdvisory ?? this.geminiAdvisory,
+      heatRisk: this.heatRisk,
+      floodRisk: this.floodRisk,
+      droughtRisk: this.droughtRisk,
+      diseaseRisk: this.diseaseRisk,
+    );
+  }
 }

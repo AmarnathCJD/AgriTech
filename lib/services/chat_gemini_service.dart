@@ -100,4 +100,57 @@ JSON Format:
       };
     }
   }
+
+  Future<Map<String, dynamic>> getStructuredAdvisory(
+      Map<String, dynamic> riskData) async {
+    // Legacy single-item method (kept for reference or single updates)
+    return getBatchStructuredAdvisory([riskData]).then((batchResult) {
+      if (batchResult.isNotEmpty) {
+        return batchResult.values.first as Map<String, dynamic>;
+      }
+      return {};
+    });
+  }
+
+  Future<Map<String, dynamic>> getBatchStructuredAdvisory(
+      List<Map<String, dynamic>> allRisksData) async {
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null) throw Exception('No API Key');
+
+    final model = GenerativeModel(
+        model: 'gemini-flash-latest',
+        apiKey: apiKey,
+        generationConfig: GenerationConfig(
+            responseMimeType: 'application/json', temperature: 0.2),
+        systemInstruction: Content.system('''
+You are an expert agricultural advisor. 
+Task: Analyze the provided LIST of crop risk data items and generate a professional, concise advisory for EACH item.
+Do NOT recompute risks. Use the provided scores.
+
+Input: JSON List of crop objects.
+
+Output JSON Format:
+{
+  "Key (Crop Name exact match)": {
+      "advisory_title": "Short, punchy title",
+      "advisory_summary": "2-3 sentence professional summary.",
+      "recommended_actions": ["Action 1", "Action 2", "Action 3"],
+      "urgency_level": "Low/Moderate/High"
+  }
+}
+'''));
+
+    try {
+      final response =
+          await model.generateContent([Content.text(jsonEncode(allRisksData))]);
+      var responseText = response.text;
+      if (responseText == null) return {};
+      responseText =
+          responseText.replaceAll('```json', '').replaceAll('```', '').trim();
+      return jsonDecode(responseText);
+    } catch (e) {
+      print("Batch Advisory Error: $e");
+      return {};
+    }
+  }
 }
