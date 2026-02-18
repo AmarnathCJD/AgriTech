@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
 import 'crop_planning_screen.dart';
 import '../services/location_service.dart';
+import 'equipment/equipment_listing_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -284,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const EquipmentScreen())),
+                          builder: (_) => const EquipmentListingScreen())),
                 ),
                 _buildCreativeFeatureCard(
                   context,

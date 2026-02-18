@@ -23,6 +23,8 @@ dependencies:
   html: ^0.15.4
   flutter_dotenv: ^6.0.0
   google_generative_ai: ^0.4.7
+  flutter_rating_bar: ^4.0.1
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:
