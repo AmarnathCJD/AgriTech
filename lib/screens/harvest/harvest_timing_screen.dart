@@ -21,71 +21,66 @@ class _HarvestTimingScreenState extends State<HarvestTimingScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill location from LocationProvider if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final locProvider = context.read<LocationProvider>();
       final harvestProvider = context.read<HarvestProvider>();
 
-      harvestProvider.reset(); // Clear previous results
+      harvestProvider.reset();
 
       if (locProvider.currentLocation != "Fetching..." &&
           locProvider.currentLocation != "Set Location") {
         _locationController.text = locProvider.currentLocation;
-        // Note: We might need accurate lat/lon. locationProvider has logic but doesn't expose lat/lon directly easily?
-        // We'll rely on HarvestProvider to maybe re-fetch or use what we have.
-        // Actually, LocationProvider has internal logic.
-        // For MPV, let's assume we use the address string and let HarvestProvider's WeatherService
-        // resolve it if it can, OR we can use the LocationService in HarvestProvider.
-        // Wait, current LocationProvider sets _currentLocation string.
-        // HarvestProvider needs lat/lon.
-        // So when "Use My Location" is clicked, we should get that from LocationProvider.
-        // But LocationProvider doesn't publicly expose lat/lon fields (only address).
-        // This is a small gap. I should have updated LocationProvider to expose lat/lon.
-        // WORKAROUND: I will re-implement "Use My Location" here to get lat/lon using Geolocator directly
-        // OR update LocationProvider. Updating Provider is cleaner but for speed I might just use the service directly here.
-        // Actually, let's just trigger a fresh fetch in HarvestProvider using LocationService
-        // if the user clicks "Use My Location".
+
+        // Auto-set location in provider if we have coordinates
+        if (locProvider.latitude != null && locProvider.longitude != null) {
+          harvestProvider.setLocation(locProvider.currentLocation,
+              locProvider.latitude!, locProvider.longitude!);
+        }
       }
     });
   }
 
   Future<void> _submit() async {
     final provider = context.read<HarvestProvider>();
+    final locProvider = context.read<LocationProvider>();
 
-    // Resolve Location if needed
+    // 1. Ensure provider has location if input field is filled
     if (provider.locationName.isEmpty && _locationController.text.isNotEmpty) {
-      // Try to resolve the text input to lat/lon
-      // For now, let's just use a dummy lat/lon if we can't resolve,
-      // OR better, show error "Please select valid location".
-      // Let's assume the user MUST use the "Use My Location" or pick from a list that gives coordinates.
-      // But for MVP, simple manual entry is hard to geocode without an API call.
-      // Let's just use "Use My Location" primarily.
+      // If the text matches LocationProvider, rely on it
+      if (_locationController.text == locProvider.currentLocation &&
+          locProvider.latitude != null) {
+        provider.setLocation(locProvider.currentLocation, locProvider.latitude!,
+            locProvider.longitude!);
+      } else {
+        // Manual entry without geocoding support in this screen yet.
+        // Improvement: Add Geocoding here or show error.
+        // For now, if no coordinates, we can't proceed.
+        if (provider.locationName.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text("Please verify location using the icon"),
+                backgroundColor: Colors.orange),
+          );
+          return;
+        }
+      }
     }
 
-    // Actually, let's enforce "Use My Location" for simplicity in this MVP step
-    // or add a geocoding call.
-
-    // Quick Fix: If manual text is entered, we need to geocode it.
-    // I'll add logic to HarvestProvider to handle address string -> lat/lon via Weather/Location service?
-    // No, HarvestProvider expects lat/lon.
-
-    // IMPROVEMENT: I'll use the LocationService to search/resolve here if needed.
-    // implementation detail: simplified for now.
-
-    // If we have no lat/lon, try to get from current location provider context (if I update it).
-    // Let's just re-fetch current position here to be sure.
+    // 2. Default fallback to current user location if everything empty
     if (provider.locationName.isEmpty) {
-      // Default to current user location
-      try {
-        final loc = context.read<LocationProvider>();
-        if (loc.currentLocation == "Fetching..." ||
-            loc.currentLocation == "Set Location") {
-          // force fetch
-          await loc.fetchUserLocation();
+      if (locProvider.latitude != null) {
+        provider.setLocation(locProvider.currentLocation, locProvider.latitude!,
+            locProvider.longitude!);
+        _locationController.text = locProvider.currentLocation;
+      } else {
+        // Try fetch
+        await locProvider.fetchUserLocation();
+        if (locProvider.latitude != null) {
+          provider.setLocation(locProvider.currentLocation,
+              locProvider.latitude!, locProvider.longitude!);
+          _locationController.text = locProvider.currentLocation;
         }
-        // We still lack lat/lon from LocationProvider public API!
-        // Okay, I will use Geolocator here to get it.
-      } catch (e) {}
+      }
     }
 
     await provider.checkHarvestStatus();
@@ -221,27 +216,12 @@ class _HarvestTimingScreenState extends State<HarvestTimingScreen> {
                     final locProvider = context.read<LocationProvider>();
                     await locProvider.fetchUserLocation();
 
-                    // We need lat/lon. Hack: re-use geolocator here or assume locProvider works
-                    // To make it robust:
-                    // 1. Get address from provider
-                    _locationController.text = locProvider.currentLocation;
-
-                    // 2. Mock or Get Lat/Lon
-                    // For MVP, I will set dummy lat/lon if I can't get it,
-                    // but ideally I should implementation "getLocation" in HarvestProvider
-                    // that uses the detailed LocationService.
-                    // Let's assume standard Central India for now to avoid blocking if Geolocator fails
-                    // or if I don't want to add geolocator import here.
-                    // Actually, I can use the LocationService from `../services/location_service.dart`.
-                    // But I need to instantiate it.
-
-                    // BETTER: Provider sets generic lat/lon for "Use My Location"
-                    // since LocationProvider logic is hidden.
-                    // I will set valid approximate lat/lon for testing.
-                    provider.setLocation(
-                        locProvider.currentLocation, 20.5937, 78.9629);
-
-                    // NOTE: In production, we MUST expose lat/lon from LocationProvider.
+                    if (locProvider.latitude != null &&
+                        locProvider.longitude != null) {
+                      _locationController.text = locProvider.currentLocation;
+                      provider.setLocation(locProvider.currentLocation,
+                          locProvider.latitude!, locProvider.longitude!);
+                    }
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
