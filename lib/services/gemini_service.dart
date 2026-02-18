@@ -83,52 +83,48 @@ Return STRICT JSON in this format:
     pattern.allMatches(text).forEach((match) => print(match.group(0)));
   }
 
-  void _printLog(String text) {
-    final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
-    pattern.allMatches(text).forEach((match) => print(match.group(0)));
-  }
-
   // Restored method for CropPlanningProvider
-  Future<Map<String, dynamic>?> checkCropFeasibility(
-      Map<String, dynamic> userInputs,
-      Map<String, dynamic> weatherSummary,
-      Map<String, dynamic> marketSummary,
-      List<dynamic> cropDataset) async {
+  Future<Map<String, dynamic>> checkCropFeasibility(
+    Map<String, dynamic> userInputs,
+    Map<String, dynamic> weatherSummary,
+    Map<String, dynamic> districtMarketData,
+    List<dynamic> cropDataset,
+  ) async {
     try {
       final apiKey = dotenv.env['GEMINI_API_KEY'];
-      if (apiKey == null || apiKey.isEmpty) return null;
-
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception("GEMINI_API_KEY is missing");
+      }
       final model = GenerativeModel(model: _modelName, apiKey: apiKey);
 
-      final prompt = '''
-You are an expert agronomist. Analyze the following data to recommend the best crops.
+      final prompt = _buildPrompt(
+          userInputs, weatherSummary, districtMarketData, cropDataset);
 
-User Inputs: $userInputs
-Weather: $weatherSummary
-Market: $marketSummary
-Available Crops to consider: ${cropDataset.map((e) => e['crop_name']).join(', ')}
+      print("--- GENERATED GEMINI PROMPT ---");
+      _printLog(prompt);
+      print("-------------------------------");
 
-Provide a feasibility report in JSON format:
-{
-  "best_crop": "Name",
-  "confidence": "High/Medium/Low",
-  "reasoning": "...",
-  "risks": "..."
-}
-''';
       final content = [Content.text(prompt)];
       final response = await model.generateContent(content);
 
-      if (response.text == null) return null;
+      if (response.text == null) {
+        throw Exception("Empty response from AI");
+      }
 
-      // Basic cleanup
-      String clean =
+      print("Gemini Response: ${response.text}"); // Debug log
+
+      // Parse JSON response
+      // Remove any markdown code block syntax if present
+      String cleanText =
           response.text!.replaceAll('```json', '').replaceAll('```', '').trim();
-      return json.decode(clean);
+      final jsonResponse = jsonDecode(cleanText);
+      return jsonResponse;
     } catch (e) {
       if (kDebugMode) print("Gemini Planning Error: $e");
-      return null;
+      throw Exception("Failed to generate crop plan: $e");
     }
+  }
+
   String _buildPrompt(
     Map<String, dynamic> inputs,
     Map<String, dynamic> weather,
