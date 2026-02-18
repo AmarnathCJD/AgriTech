@@ -306,6 +306,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
+                      title: "Community\nForum",
+                      subtitle: "Discuss",
+                      icon: Icons.forum_outlined,
+                      // Teal/Blue Gradient
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF00695C), Color(0xFF00897B)]),
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const CommunityScreen())),
+                    ),
+                    _buildCreativeFeatureCard(
+                      context,
                       title: "More\nServices",
                       subtitle: "Govt Schemes",
                       icon: Icons.grid_view,
@@ -317,19 +330,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           MaterialPageRoute(
                               builder: (_) =>
                                   const AdditionalFeaturesScreen())),
-                    ),
-                    _buildCreativeFeatureCard(
-                      context,
-                      title: "Community\nForum",
-                      subtitle: "Discuss",
-                      icon: Icons.forum_outlined,
-                      // Teal/Blue Gradient
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF00695C), Color(0xFF00897B)]),
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const CommunityScreen())),
                     ),
                   ],
                 ).animate().slideY(begin: 0.1, end: 0).fadeIn(),
