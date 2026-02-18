@@ -1,0 +1,62 @@
+[
+    {
+        "name": "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
+        "url": "https://pmkisan.gov.in/",
+        "description": "Direct income support of ₹6,000 per year to farmer families."
+    },
+    {
+        "name": "PMFBY (Pradhan Mantri Fasal Bima Yojana)",
+        "url": "https://pmfby.gov.in/",
+        "description": "Crop insurance scheme for yield loss protection."
+    },
+    {
+        "name": "Agriculture Infrastructure Fund (AIF)",
+        "url": "http://agriinfra.dac.gov.in/",
+        "description": "Financing facility for post-harvest management infrastructure."
+    },
+    {
+        "name": "e-NAM (National Agriculture Market)",
+        "url": "https://enam.gov.in/",
+        "description": "Pan-India electronic trading portal for farm produce."
+    },
+    {
+        "name": "Soil Health Card Scheme",
+        "url": "https://soilhealth.dac.gov.in/",
+        "description": "Crop-wise fertilizer recommendations for better yields."
+    },
+    {
+        "name": "PMKSY (Pradhan Mantri Krishi Sinchayee Yojana)",
+        "url": "https://pmksy.gov.in/",
+        "description": "Irrigation coverage to improve water use efficiency."
+    },
+    {
+        "name": "Kisan Credit Card (KCC)",
+        "url": "https://mkisan.gov.in/Home/KCCDashboard",
+        "description": "Credit support to farmers for cultivation and other needs."
+    },
+    {
+        "name": "Jaivik Kheti (Organic Farming)",
+        "url": "https://pgsindia-ncof.gov.in/home.aspx",
+        "description": "Promotion of organic farming and certification."
+    },
+    {
+        "name": "ATMA (Agricultural Technology Management Agency)",
+        "url": "https://extensionreforms.da.gov.in/",
+        "description": "Decentralized agricultural extension system."
+    },
+    {
+        "name": "MIDH (Integrated Development of Horticulture)",
+        "url": "http://midh.gov.in/",
+        "description": "Holistic growth of the horticulture sector."
+    },
+    {
+        "name": "Agmarknet",
+        "url": "http://agmarknet.gov.in/",
+        "description": "Agricultural marketing information network."
+    },
+    {
+        "name": "DBT in Agriculture",
+        "url": "https://www.dbtdacfw.gov.in/",
+        "description": "Direct Benefit Transfer portal for agricultural schemes."
+    }
+]

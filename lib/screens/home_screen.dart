@@ -14,6 +14,7 @@ import 'profile_screen.dart';
 import 'chat_screen.dart';
 import '../providers/localization_provider.dart';
 import 'live_crop_protection_screen.dart';
+import 'government_schemes_screen.dart';
 import 'community/community_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -321,8 +322,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
+                      title: "Govt\nSchemes",
+                      subtitle: "Subsidies",
+                      icon: Icons.account_balance,
+                      // Orange/Gold Gradient
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFFFF6F00), Color(0xFFFF8F00)]),
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const GovernmentSchemesScreen())),
+                    ),
+                    _buildCreativeFeatureCard(
+                      context,
                       title: "More\nServices",
-                      subtitle: "Govt Schemes",
+                      subtitle: "All Features",
                       icon: Icons.grid_view,
                       // Deep Royal Purple
                       gradient: const LinearGradient(
