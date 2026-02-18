@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
+
 import '../../models/product_model.dart';
 import '../../services/store_service.dart';
 
@@ -22,20 +22,25 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _fetchCart() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final cart = await _storeService.getCart();
-      setState(() => _cart = cart);
+      if (mounted) {
+        setState(() => _cart = cart);
+      }
     } catch (e) {
       // Handle error
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _removeItem(String productId) async {
     final success = await _storeService.removeFromCart(productId);
-    if (success) {
+    if (success && mounted) {
       _fetchCart();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Item removed from cart')),
@@ -45,7 +50,7 @@ class _CartScreenState extends State<CartScreen> {
 
   Future<void> _checkout() async {
     final success = await _storeService.checkout();
-    if (success) {
+    if (success && mounted) {
       _fetchCart(); // Will be empty
       showDialog(
         context: context,
@@ -54,7 +59,10 @@ class _CartScreenState extends State<CartScreen> {
           content: const Text('Order placed successfully!'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context); // Go back to store
+              },
               child: const Text('OK'),
             ),
           ],
@@ -84,25 +92,24 @@ class _CartScreenState extends State<CartScreen> {
                             margin: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                             child: ListTile(
-                              leading: item.product.image
-                                      .startsWith('data:image')
-                                  ? Image.memory(
-                                      base64Decode(
-                                          item.product.image.split(',').last),
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (c, o, s) =>
-                                          const Icon(Icons.broken_image),
-                                    )
-                                  : Image.network(
-                                      item.product.image,
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (c, o, s) =>
-                                          const Icon(Icons.broken_image),
-                                    ),
+                              leading:
+                                  item.product.image.startsWith('data:image')
+                                      ? (item.product.decodedImage != null
+                                          ? Image.memory(
+                                              item.product.decodedImage!,
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : const Icon(Icons.broken_image))
+                                      : Image.network(
+                                          item.product.image,
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (c, o, s) =>
+                                              const Icon(Icons.broken_image),
+                                        ),
                               title: Text(item.product.name),
                               subtitle: Text(
                                   'Qty: ${item.quantity}  |  ₹${item.itemTotal}'),
