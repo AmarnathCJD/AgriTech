@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 class Product {
   final String id;
   final String name;
@@ -9,6 +12,7 @@ class Product {
   final String image;
   final int stock;
   final double rating;
+  final Uint8List? decodedImage;
 
   Product({
     required this.id,
@@ -21,9 +25,20 @@ class Product {
     required this.image,
     required this.stock,
     required this.rating,
+    this.decodedImage,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    String img = json['image'] ?? '';
+    Uint8List? decoded;
+    if (img.startsWith('data:image')) {
+      try {
+        decoded = base64Decode(img.split(',').last);
+      } catch (e) {
+        print('Error decoding image for product ${json['name']}: $e');
+      }
+    }
+
     return Product(
       id: json['_id'] ?? '',
       name: json['name'] ?? '',
@@ -32,9 +47,10 @@ class Product {
       originalPrice: (json['original_price'] as num?)?.toDouble() ?? 0.0,
       ourPrice: (json['our_price'] as num?)?.toDouble() ?? 0.0,
       seller: json['seller'] ?? '',
-      image: json['image'] ?? '',
+      image: img,
       stock: json['stock'] ?? 0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      decodedImage: decoded,
     );
   }
 }

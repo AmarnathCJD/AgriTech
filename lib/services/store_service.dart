@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product_model.dart';
@@ -16,6 +17,28 @@ class StoreService {
         .getString('auth_token'); // Adjust key based on actual auth impl
   }
 
+  // Helper method for retry logic
+  Future<http.Response> _withRetry(
+      Future<http.Response> Function() requestFn) async {
+    try {
+      return await requestFn().timeout(const Duration(seconds: 3));
+    } on TimeoutException {
+      print('StoreService: Request timed out > 3s. Retrying...');
+      try {
+        // Retry once with slightly longer timeout (e.g., 5s) or same?
+        // User asked "call again", so we retry.
+        return await requestFn().timeout(const Duration(seconds: 5));
+      } on TimeoutException {
+        print('StoreService: Retry also timed out.');
+        throw Exception('Connection timed out');
+      } catch (e) {
+        rethrow;
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<Product>> getProducts({String? category}) async {
     try {
       String url = '$baseUrl/store/products';
@@ -23,7 +46,7 @@ class StoreService {
         url += '?category=$category';
       }
 
-      final response = await http.get(Uri.parse(url));
+      final response = await _withRetry(() => http.get(Uri.parse(url)));
 
       if (response.statusCode == 200) {
         List<dynamic> body = jsonDecode(response.body);
@@ -39,65 +62,84 @@ class StoreService {
 
   Future<Cart> getCart() async {
     final token = await _getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/store/cart'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+    try {
+      final response = await _withRetry(() => http.get(
+            Uri.parse('$baseUrl/store/cart'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ));
 
-    if (response.statusCode == 200) {
-      return Cart.fromJson(jsonDecode(response.body));
-    } else {
-      // If cart not found or error, return empty cart
+      if (response.statusCode == 200) {
+        return Cart.fromJson(jsonDecode(response.body));
+      } else {
+        return Cart(items: [], totalPrice: 0.0, totalItems: 0);
+      }
+    } catch (e) {
+      print('Error fetching cart: $e');
       return Cart(items: [], totalPrice: 0.0, totalItems: 0);
     }
   }
 
   Future<bool> addToCart(String productId, int quantity) async {
     final token = await _getToken();
-    final response = await http.post(
-      Uri.parse('$baseUrl/store/cart/add'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'product_id': productId,
-        'quantity': quantity,
-      }),
-    );
+    try {
+      final response = await _withRetry(() => http.post(
+            Uri.parse('$baseUrl/store/cart/add'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'product_id': productId,
+              'quantity': quantity,
+            }),
+          ));
 
-    return response.statusCode == 200;
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error adding to cart: $e');
+      return false;
+    }
   }
 
   Future<bool> removeFromCart(String productId) async {
     final token = await _getToken();
-    final response = await http.post(
-      Uri.parse('$baseUrl/store/cart/remove'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'product_id': productId,
-      }),
-    );
+    try {
+      final response = await _withRetry(() => http.post(
+            Uri.parse('$baseUrl/store/cart/remove'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'product_id': productId,
+            }),
+          ));
 
-    return response.statusCode == 200;
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error removing from cart: $e');
+      return false;
+    }
   }
 
   Future<bool> checkout() async {
     final token = await _getToken();
-    final response = await http.post(
-      Uri.parse('$baseUrl/store/checkout'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+    try {
+      final response = await _withRetry(() => http.post(
+            Uri.parse('$baseUrl/store/checkout'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ));
 
-    return response.statusCode == 200;
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error during checkout: $e');
+      return false;
+    }
   }
 }

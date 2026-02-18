@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
+
 import '../../models/product_model.dart';
 import '../../services/store_service.dart';
-import '../../providers/cart_provider.dart';
-import 'package:provider/provider.dart';
 import 'cart_screen.dart';
 
 class StoreScreen extends StatefulWidget {
@@ -26,24 +24,46 @@ class _StoreScreenState extends State<StoreScreen> {
     'Machines'
   ];
 
+  int _cartItemCount = 0;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CartProvider>().fetchCart();
-    });
     _fetchProducts();
+    _fetchCart();
+  }
+
+  Future<void> _fetchCart() async {
+    if (!mounted) return;
+    try {
+      final cart = await _storeService.getCart();
+      if (mounted) {
+        setState(() => _cartItemCount = cart.totalItems);
+      }
+    } catch (e) {
+      print("StoreScreen: Error fetching cart: $e");
+    }
   }
 
   Future<void> _fetchProducts() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
+      print("StoreScreen: Fetching products for category: $_selectedCategory");
       final products = await _storeService.getProducts(
         category: _selectedCategory == 'All' ? null : _selectedCategory,
       );
-      setState(() => _products = products);
+      if (mounted) {
+        print("StoreScreen: Fetched ${products.length} products");
+        setState(() => _products = products);
+      }
     } catch (e) {
-      // Handle error
+      print("StoreScreen: Error fetching products: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading products: $e')),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -58,51 +78,87 @@ class _StoreScreenState extends State<StoreScreen> {
     _fetchProducts();
   }
 
+  String? _addingProductId;
+
+  Future<void> _addToCart(Product product) async {
+    setState(() => _addingProductId = product.id);
+    try {
+      final success = await _storeService.addToCart(product.id, 1);
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product.name} added to cart'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _fetchCart(); // Update badge
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to add to cart'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _addingProductId = null);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Farm Store'),
         actions: [
-          Consumer<CartProvider>(
-            builder: (context, cart, child) => Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.shopping_cart),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const CartScreen()),
-                    );
-                  },
-                ),
-                if (cart.totalItems > 0)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        '${cart.totalItems}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CartScreen()),
+                  ).then((_) => _fetchCart()); // Refresh on return
+                },
+              ),
+              if (_cartItemCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  )
-              ],
-            ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '$_cartItemCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -185,13 +241,18 @@ class _StoreScreenState extends State<StoreScreen> {
                                                       fit: BoxFit.cover)
                                                   : (product.image.startsWith(
                                                           'data:image')
-                                                      ? Image.memory(
-                                                          base64Decode(product
-                                                              .image
-                                                              .split(',')
-                                                              .last),
-                                                          fit: BoxFit.cover,
-                                                        )
+                                                      ? (product.decodedImage !=
+                                                              null
+                                                          ? Image.memory(
+                                                              product
+                                                                  .decodedImage!,
+                                                              fit: BoxFit.cover,
+                                                            )
+                                                          : const Icon(
+                                                              Icons.image,
+                                                              size: 80,
+                                                              color:
+                                                                  Colors.grey))
                                                       : const Icon(Icons.image,
                                                           size: 80,
                                                           color: Colors.grey)),
@@ -261,9 +322,7 @@ class _StoreScreenState extends State<StoreScreen> {
                                           child: const Text('Close')),
                                       ElevatedButton(
                                         onPressed: () {
-                                          context
-                                              .read<CartProvider>()
-                                              .addItem(product.id);
+                                          _addToCart(product);
                                           Navigator.pop(context);
                                         },
                                         style: ElevatedButton.styleFrom(
@@ -285,17 +344,21 @@ class _StoreScreenState extends State<StoreScreen> {
                                       width: double.infinity,
                                       child: product.image
                                               .startsWith('data:image')
-                                          ? Image.memory(
-                                              base64Decode(product.image
-                                                  .split(',')
-                                                  .last),
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (c, o, s) =>
-                                                  Container(
-                                                      color: Colors.grey[300],
-                                                      child: const Icon(Icons
-                                                          .image_not_supported)),
-                                            )
+                                          ? (product.decodedImage != null
+                                              ? Image.memory(
+                                                  product.decodedImage!,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (c, o, s) =>
+                                                      Container(
+                                                          color:
+                                                              Colors.grey[300],
+                                                          child: const Icon(Icons
+                                                              .image_not_supported)),
+                                                )
+                                              : Container(
+                                                  color: Colors.grey[300],
+                                                  child: const Icon(Icons
+                                                      .image_not_supported)))
                                           : Image.network(
                                               product.image,
                                               fit: BoxFit.cover,
@@ -345,98 +408,37 @@ class _StoreScreenState extends State<StoreScreen> {
                                         SizedBox(
                                           width: double.infinity,
                                           height: 36,
-                                          child: Consumer<CartProvider>(
-                                            builder: (context, cart, child) {
-                                              final qty = cart
-                                                  .getItemQuantity(product.id);
-                                              final isLoading = cart
-                                                  .isItemLoading(product.id);
-
-                                              if (isLoading) {
-                                                return const Center(
-                                                  child: SizedBox(
-                                                    height: 20,
-                                                    width: 20,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                            strokeWidth: 2,
-                                                            color:
-                                                                Colors.green),
-                                                  ),
-                                                );
-                                              }
-
-                                              if (qty > 0) {
-                                                return Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    InkWell(
-                                                      onTap: () =>
-                                                          cart.removeItem(
-                                                              product.id),
-                                                      child: Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(4),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: Colors.red[50],
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(8),
-                                                        ),
-                                                        child: const Icon(
-                                                            Icons.remove,
-                                                            size: 16,
-                                                            color: Colors.red),
+                                          child: SizedBox(
+                                            width: double.infinity,
+                                            height: 36,
+                                            child: ElevatedButton(
+                                              onPressed: _addingProductId ==
+                                                      product.id
+                                                  ? null
+                                                  : () => _addToCart(product),
+                                              style: ElevatedButton.styleFrom(
+                                                padding: EdgeInsets.zero,
+                                                backgroundColor: Colors.green,
+                                                disabledBackgroundColor: Colors
+                                                    .green
+                                                    .withOpacity(0.6),
+                                              ),
+                                              child: _addingProductId ==
+                                                      product.id
+                                                  ? const SizedBox(
+                                                      height: 16,
+                                                      width: 16,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: Colors.white,
                                                       ),
-                                                    ),
-                                                    Text('$qty',
-                                                        style: const TextStyle(
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold)),
-                                                    InkWell(
-                                                      onTap: () => cart
-                                                          .addItem(product.id),
-                                                      child: Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(4),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color:
-                                                              Colors.green[50],
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(8),
-                                                        ),
-                                                        child: const Icon(
-                                                            Icons.add,
-                                                            size: 16,
-                                                            color:
-                                                                Colors.green),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                );
-                                              }
-
-                                              return ElevatedButton(
-                                                onPressed: () =>
-                                                    cart.addItem(product.id),
-                                                style: ElevatedButton.styleFrom(
-                                                  padding: EdgeInsets.zero,
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                                child: const Text('Add to Cart',
-                                                    style: TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.white)),
-                                              );
-                                            },
+                                                    )
+                                                  : const Text('Add to Cart',
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.white)),
+                                            ),
                                           ),
                                         ),
                                       ],
