@@ -19,7 +19,6 @@ Mapping Rules:
 - mandi/prices -> MARKET_INTELLIGENCE
 - crop/planning -> CROP_PLANNING
 - harvest -> HARVEST_TIMING
-- insurance/risk -> INSURANCE
 - equipment/tractor -> EQUIPMENT_RENTAL
 - storage/warehouse -> STORAGE
 - govt schemes/subsidy -> GOVT_SCHEMES

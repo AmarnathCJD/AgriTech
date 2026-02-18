@@ -61,9 +61,6 @@ class _ChatScreenState extends State<ChatScreen> {
       case 'HARVEST_TIMING':
         screen = const HarvestTimingScreen();
         break;
-      case 'INSURANCE':
-        screen = const RiskCalculatorScreen();
-        break;
       case 'EQUIPMENT_RENTAL':
         screen = const EquipmentScreen();
         break;
@@ -335,8 +332,6 @@ class ChatBubble extends StatelessWidget {
         return 'Plan Crops';
       case 'HARVEST_TIMING':
         return 'Check Harvest Time';
-      case 'INSURANCE':
-        return 'View Insurance';
       case 'EQUIPMENT_RENTAL':
         return 'Rent Equipment';
       case 'STORAGE':

@@ -13,6 +13,7 @@ import 'equipment/equipment_listing_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
 import '../providers/localization_provider.dart';
+import 'live_crop_protection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -279,8 +280,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     _buildCreativeFeatureCard(
                       context,
-                      title: "Risk\nCalculator",
-                      subtitle: "Secure Farm",
+                      title: "Live Crop\nProtection",
+                      subtitle: "Weather Risks",
                       icon: Icons.shield_outlined,
                       // Dark Crimson
                       gradient: const LinearGradient(
@@ -288,7 +289,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const RiskCalculatorScreen())),
+                              builder: (_) =>
+                                  const LiveCropProtectionScreen())),
                     ),
                     _buildCreativeFeatureCard(
                       context,
