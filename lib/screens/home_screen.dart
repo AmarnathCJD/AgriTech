@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
 import 'crop_planning_screen.dart';
 import '../services/location_service.dart';
+import '../services/market_intelligence_service.dart';
 import 'equipment/equipment_listing_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
@@ -32,6 +33,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isWeatherLoading = false;
   double? _lastLat, _lastLon;
 
+  // Market Data
+  final MarketIntelligenceService _marketService = MarketIntelligenceService();
+  List<StockMarketData> _marketTickerData = [];
+  bool _isMarketLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +45,25 @@ class _HomeScreenState extends State<HomeScreen> {
     locProvider.addListener(_onLocationUpdate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       locProvider.fetchUserLocation();
+      _fetchMarketData();
     });
+  }
+
+  Future<void> _fetchMarketData() async {
+    try {
+      final data = await _marketService.fetchAgmarknetLive();
+      if (mounted) {
+        setState(() {
+          _marketTickerData = data;
+          _isMarketLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching market data for home: $e");
+      if (mounted) {
+        setState(() => _isMarketLoading = false);
+      }
+    }
   }
 
   @override
@@ -635,23 +659,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMarketTicker(BuildContext context, LocalizationProvider lang) {
+    if (_isMarketLoading) {
+      return const SizedBox(
+          height: 110, child: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_marketTickerData.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       height: 110,
-      child: ListView(
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none, // Allow shadows to show
-        children: [
-          _buildPriceCard(lang.t('wheat'), "₹2,100", "+2.5%", true),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('rice'), "₹1,950", "0%", false),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('mustard'), "₹4,800", "-1.2%", false,
-              isDown: true),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('cotton'), "₹6,200", "+0.8%", true),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('soybean'), "₹3,400", "+1.5%", true),
-        ],
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: _marketTickerData.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final item = _marketTickerData[index];
+          final isUp = item.change >= 0;
+          return _buildPriceCard(
+            item.commodityName,
+            "₹${item.currentPrice.toStringAsFixed(0)}",
+            "${isUp ? '+' : ''}${item.change.toStringAsFixed(1)}%",
+            isUp,
+            isDown: !isUp,
+          );
+        },
       ),
     );
   }
@@ -689,12 +724,19 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(crop,
-                  style: GoogleFonts.dmSans(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                      fontSize: 14)),
+              Expanded(
+                child: Text(crop,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                        height: 1.2,
+                        fontSize: 13)),
+              ),
+              const SizedBox(width: 4),
               Icon(icon, color: color, size: 16),
             ],
           ),
