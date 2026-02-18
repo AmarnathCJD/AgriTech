@@ -326,7 +326,6 @@ class MarketIntelligenceService {
       '#PMKisan',
       '#IndianFarmers',
       '#MSP',
-      '#AgriTech',
       '#MandiPrice'
     ];
     return tags[Random().nextInt(tags.length)];
