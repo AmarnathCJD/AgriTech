@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 import '../services/mock_backend.dart';
+import '../services/auth_service.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,6 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final success = await MockBackend()
           .login(_mobileController.text, _otpController.text);
       if (success && mounted) {
+        // Integrate with AuthService for persistent Owner session
+        await AuthService().login(_mobileController.text.trim());
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),

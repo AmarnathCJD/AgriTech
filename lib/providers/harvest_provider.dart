@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/weather_service.dart';
 import '../services/gemini_service.dart';
-import '../services/gemini_service.dart';
 import '../utils/crop_maturity_calculator.dart';
 import '../models/harvest_recommendation.dart';
 

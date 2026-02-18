@@ -5,9 +5,9 @@ import 'providers/crop_planning_provider.dart';
 import 'providers/harvest_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/localization_provider.dart';
-import 'screens/home_screen.dart';
+import 'services/auth_service.dart';
+import 'screens/home_screen.dart'; // Ensure this file exists
 import 'theme/app_theme.dart';
-
 import 'services/price_alert_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -17,6 +17,7 @@ Future<void> main() async {
 
   await PriceAlertService().init();
 
+  await AuthService().init();
   runApp(
     MultiProvider(
       providers: [
