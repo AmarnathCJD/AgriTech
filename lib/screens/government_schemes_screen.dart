@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import '../models/government_scheme.dart';
 import '../services/scheme_service.dart';
@@ -164,6 +164,6 @@ class _GovernmentSchemesScreenState extends State<GovernmentSchemesScreen> {
           ),
         ),
       ),
-    ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.2, end: 0);
+    );
   }
 }

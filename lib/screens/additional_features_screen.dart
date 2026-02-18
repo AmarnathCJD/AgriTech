@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'community/community_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'widgets/chat_floating_button.dart';
 import 'government_schemes_screen.dart';
+
+import 'chat_screen.dart';
 
 class AdditionalFeaturesScreen extends StatelessWidget {
   const AdditionalFeaturesScreen({super.key});
@@ -41,10 +44,14 @@ class AdditionalFeaturesScreen extends StatelessWidget {
           ),
           _buildFeatureTile(
             context,
-            "Agri-Expert Chatbot",
+            "Farmora Chatbot",
             "24/7 AI advisory for crop diseases",
             Icons.chat_bubble_rounded,
             Colors.green,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatScreen()),
+            ),
           ),
           _buildFeatureTile(
             context,
@@ -59,6 +66,10 @@ class AdditionalFeaturesScreen extends StatelessWidget {
             "Connect with other farmers",
             Icons.groups_rounded,
             Colors.indigo,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CommunityScreen()),
+            ),
           ),
         ].animate(interval: 100.ms).fadeIn().slideX(),
       ),

@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'feature_screens.dart';
 import 'additional_features_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
 import 'crop_planning_screen.dart';
 import '../services/location_service.dart';
+import '../services/market_intelligence_service.dart';
 import 'equipment/equipment_listing_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
@@ -26,12 +30,165 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? _weatherAlert;
+  bool _isWeatherLoading = false;
+  double? _lastLat, _lastLon;
+
+  // Market Data
+  final MarketIntelligenceService _marketService = MarketIntelligenceService();
+  List<StockMarketData> _marketTickerData = [];
+  bool _isMarketLoading = true;
+
   @override
   void initState() {
     super.initState();
+    final locProvider = context.read<LocationProvider>();
+    locProvider.addListener(_onLocationUpdate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LocationProvider>().fetchUserLocation();
+      locProvider.fetchUserLocation();
+      _fetchMarketData();
     });
+  }
+
+  Future<void> _fetchMarketData() async {
+    try {
+      final data = await _marketService.fetchAgmarknetLive();
+      if (mounted) {
+        setState(() {
+          _marketTickerData = data;
+          _isMarketLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching market data for home: $e");
+      if (mounted) {
+        setState(() => _isMarketLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    context.read<LocationProvider>().removeListener(_onLocationUpdate);
+    super.dispose();
+  }
+
+  void _onLocationUpdate() {
+    final locProvider = context.read<LocationProvider>();
+    final lat = locProvider.latitude;
+    final lon = locProvider.longitude;
+
+    if (lat != null && lon != null) {
+      // Refresh if location changed or not loaded
+      if (_weatherAlert == null || _lastLat != lat || _lastLon != lon) {
+        _lastLat = lat;
+        _lastLon = lon;
+        _fetchWeatherAlert(lat, lon);
+      }
+    }
+  }
+
+  Future<void> _fetchWeatherAlert(double lat, double lon) async {
+    setState(() => _isWeatherLoading = true);
+    try {
+      final url = Uri.parse(
+          'https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&hourly=weathercode,temperature_2m&forecast_days=3');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final hourly = data['hourly'];
+        final codes = hourly['weathercode'] as List;
+        final temps = hourly['temperature_2m'] as List;
+
+        int maxCode = 0;
+        double maxTemp = 0;
+
+        // Check next 48 hours for worst conditions
+        for (int i = 0; i < 48 && i < codes.length; i++) {
+          int code = (codes[i] as num).toInt();
+          if (code > maxCode) maxCode = code;
+
+          double t = (temps[i] as num).toDouble();
+          if (t > maxTemp) maxTemp = t;
+        }
+
+        String title = "Clear Sky";
+        String subtitle = "Perfect conditions for field work.";
+        Gradient gradient = const LinearGradient(
+            colors: [Color(0xFF2980B9), Color(0xFF6DD5FA)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight);
+        IconData icon = Icons.wb_sunny;
+
+        if (maxCode >= 95) {
+          title = "Thunderstorm Alert";
+          subtitle = "Avoid field work. Heavy lightning expected.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF232526), Color(0xFF414345)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.flash_on;
+        } else if (maxCode >= 51) {
+          title = "Rainfall Expected";
+          subtitle = "Probability of rain in next 48h. Check drainage.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.grain;
+        } else if (maxCode >= 45) {
+          title = "Fog Warning";
+          subtitle = "Low visibility expected.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF757F9A), Color(0xFFD7DDE8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.cloud;
+        } else if (maxCode >= 1) {
+          title = "Cloudy Skies";
+          subtitle = "Overcast. Moderate solar radiation.";
+          gradient = const LinearGradient(
+              colors: [Color(0xFF304352), Color(0xFFD7D2CC)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight);
+          icon = Icons.cloud_queue;
+        } else {
+          // Clear Sky Logic
+          if (maxTemp > 35) {
+            title = "Extremely Sunny";
+            subtitle = "High heat stress possible. Irrigate frequently.";
+            gradient = const LinearGradient(
+                colors: [Color(0xFFf12711), Color(0xFFf5af19)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight);
+            icon = Icons.wb_sunny;
+          } else {
+            title = "Sunny & Clear";
+            subtitle = "Excellent conditions for harvesting.";
+            gradient = const LinearGradient(
+                colors: [Color(0xFFFF8008), Color(0xFFFFC837)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight);
+            icon = Icons.wb_sunny;
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _weatherAlert = {
+              "title": title,
+              "subtitle": subtitle,
+              "gradient": gradient,
+              "icon": icon
+            };
+            _isWeatherLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print("Weather Alert Error: $e");
+      if (mounted) setState(() => _isWeatherLoading = false);
+    }
   }
 
   void _showLocationDialog(BuildContext context) {
@@ -354,100 +511,108 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 24),
 
                 // Section 3: Farmora Store Banner
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const StoreScreen()),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                // Section 3: Smart Advisory / Weather Insight
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: _weatherAlert != null
+                        ? _weatherAlert!['gradient'] as Gradient
+                        : const LinearGradient(
+                            colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 8),
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF2E7D32).withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 8),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      // Background Pattern (Decorative)
+                      Positioned(
+                        right: -20,
+                        top: -20,
+                        child: Icon(
+                          _weatherAlert != null
+                              ? _weatherAlert!['icon']
+                              : Icons.cloud,
+                          size: 150,
+                          color: Colors.white.withOpacity(0.1),
                         ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          right: -30,
-                          bottom: -30,
-                          child: Icon(
-                            Icons.shopping_cart_outlined,
-                            size: 150,
-                            color: Colors.white.withOpacity(0.15),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  "New Feature",
-                                  style: GoogleFonts.dmSans(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 10,
-                                    letterSpacing: 1,
+                      ),
+
+                      // Content
+                      Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: _isWeatherLoading
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                    color: Colors.white))
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                                Icons.warning_amber_rounded,
+                                                color: Colors.amberAccent,
+                                                size: 16),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              "48H FORECAST",
+                                              style: GoogleFonts.dmSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                "Farmora Store",
-                                style: GoogleFonts.playfairDisplay(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Get high-quality fertilizers, seeds, and tools delivered to your farm.",
-                                style: GoogleFonts.dmSans(
-                                  color: Colors.white.withOpacity(0.95),
-                                  fontSize: 14,
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: Text(
-                                  "Shop Now",
-                                  style: GoogleFonts.dmSans(
-                                    color: const Color(0xFF2E7D32),
-                                    fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _weatherAlert != null
+                                        ? _weatherAlert!['title']
+                                        : "Fetching Weather...",
+                                    style: GoogleFonts.playfairDisplay(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _weatherAlert != null
+                                        ? _weatherAlert!['subtitle']
+                                        : "Updating your local forecast...",
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 14,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -459,8 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (index == 1) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) => const MarketIntelligenceScreen()),
+                  MaterialPageRoute(builder: (context) => const StoreScreen()),
                 );
               } else if (index == 2) {
                 Navigator.push(
@@ -481,7 +645,8 @@ class _HomeScreenState extends State<HomeScreen> {
               NavigationDestination(
                   icon: const Icon(Icons.home_filled), label: lang.t('home')),
               NavigationDestination(
-                  icon: const Icon(Icons.trending_up), label: lang.t('market')),
+                  icon: const Icon(Icons.store_mall_directory_outlined),
+                  label: "Store"),
               NavigationDestination(
                   icon: const Icon(Icons.chat_bubble_outline),
                   label: lang.t('advisory')),
@@ -496,23 +661,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMarketTicker(BuildContext context, LocalizationProvider lang) {
+    if (_isMarketLoading) {
+      return const SizedBox(
+          height: 110, child: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_marketTickerData.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       height: 110,
-      child: ListView(
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none, // Allow shadows to show
-        children: [
-          _buildPriceCard(lang.t('wheat'), "₹2,100", "+2.5%", true),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('rice'), "₹1,950", "0%", false),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('mustard'), "₹4,800", "-1.2%", false,
-              isDown: true),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('cotton'), "₹6,200", "+0.8%", true),
-          const SizedBox(width: 12),
-          _buildPriceCard(lang.t('soybean'), "₹3,400", "+1.5%", true),
-        ],
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: _marketTickerData.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final item = _marketTickerData[index];
+          final isUp = item.change >= 0;
+          return _buildPriceCard(
+            item.commodityName,
+            "₹${item.currentPrice.toStringAsFixed(0)}",
+            "${isUp ? '+' : ''}${item.change.toStringAsFixed(1)}%",
+            isUp,
+            isDown: !isUp,
+          );
+        },
       ),
     );
   }
@@ -550,12 +726,19 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(crop,
-                  style: GoogleFonts.dmSans(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                      fontSize: 14)),
+              Expanded(
+                child: Text(crop,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                        height: 1.2,
+                        fontSize: 13)),
+              ),
+              const SizedBox(width: 4),
               Icon(icon, color: color, size: 16),
             ],
           ),
