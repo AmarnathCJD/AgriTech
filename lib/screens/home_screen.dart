@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../theme/app_theme.dart';
 import 'feature_screens.dart';
 import 'additional_features_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
-import 'crop_planning_screen.dart' hide CropPlanningScreen;
+import 'crop_planning_screen.dart';
 import '../services/location_service.dart'; // Import LocationSuggestion
 
 class HomeScreen extends StatefulWidget {
