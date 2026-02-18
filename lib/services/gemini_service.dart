@@ -11,7 +11,7 @@ class GeminiService {
       throw Exception("GEMINI_API_KEY is missing in .env file");
     }
     _model = GenerativeModel(
-        model: 'gemini-1.5-flash',
+        model: 'gemini-latest-flash',
         apiKey: apiKey,
         generationConfig:
             GenerationConfig(responseMimeType: 'application/json'));
