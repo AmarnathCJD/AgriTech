@@ -23,7 +23,7 @@ class WeatherService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print("Error fetching weather: $e");
+        print("Error fetching weatherr: $e");
       }
       return "--°C"; // Return placeholder on error
     }
