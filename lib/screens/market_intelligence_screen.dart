@@ -365,72 +365,180 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
 
   Widget _buildSentimentSection() {
     final trends = _sentiment['trends'] as List<String>;
-    final isBullish = _sentiment['label'] == 'Bullish';
+    // final isBullish = _sentiment['label'] == 'Bullish'; // Usage handled dynamically in UI
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF4A00E0), // Deep Purple
+              Color(0xFF8E2DE2) // Violet
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4))
-          ]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.psychology, color: Colors.purple),
-              const SizedBox(width: 10),
-              Text("AI Market Sentiment",
-                  style: GoogleFonts.dmSans(
-                      color: Colors.black87,
+              color: const Color(0xFF4A00E0).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Decorative Background Patterns
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Icon(
+                Icons.psychology,
+                size: 150,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+            Positioned(
+              bottom: -20,
+              left: 20,
+              child: Icon(
+                Icons.ssid_chart,
+                size: 80,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.auto_awesome,
+                                color: Colors.amberAccent, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              "AI FORECAST",
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              )
+                            ]),
+                        child: Row(
+                          children: [
+                            Text(
+                              "SCORE",
+                              style: GoogleFonts.dmSans(
+                                color: Colors.deepPurple.withOpacity(0.7),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${_sentiment['score']}",
+                              style: GoogleFonts.dmSans(
+                                color: Colors.deepPurple,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Title
+                  Text(
+                    "Market is ${_sentiment['label']}",
+                    style: GoogleFonts.playfairDisplay(
+                      color: Colors.white,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16)),
-              const Spacer(),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                    color: (isBullish ? Colors.green : Colors.red)
-                        .withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10)),
-                child: Text(_sentiment['label'].toUpperCase(),
-                    style: TextStyle(
-                        color: isBullish ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12)),
-              )
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(_sentiment['reason'],
-              style: GoogleFonts.dmSans(
-                  color: Colors.grey.shade700, fontSize: 13, height: 1.5)),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: trends
-                .map((t) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border:
-                              Border.all(color: Colors.blue.withOpacity(0.3))),
-                      child: Text(t,
-                          style: TextStyle(
-                              color: Colors.blue.shade800, fontSize: 12)),
-                    ))
-                .toList(),
-          )
-        ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Description
+                  Text(
+                    _sentiment['reason'],
+                    style: GoogleFonts.dmSans(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 15,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Divider(color: Colors.white.withOpacity(0.2), height: 1),
+                  const SizedBox(height: 16),
+                  // Footer Trends
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Icon(Icons.trending_up,
+                            color: Colors.white70, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 4,
+                          children: trends
+                              .map((t) => Text(
+                                    t,
+                                    style: GoogleFonts.dmSans(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -448,7 +556,7 @@ class _MarketIntelligenceScreenState extends State<MarketIntelligenceScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("BREAKING NEWS",
+                Text("LATEST AGRI NEWS",
                     style: GoogleFonts.bebasNeue(
                         color: Colors.red, fontSize: 24, letterSpacing: 1.2)),
               ],
