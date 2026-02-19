@@ -103,9 +103,16 @@ class _BookingScreenState extends State<BookingScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Confirm Booking"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          "Confirm Booking",
+          style: GoogleFonts.playfairDisplay(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -158,8 +165,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown,
-                    disabledBackgroundColor: Colors.brown.withOpacity(0.5),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    disabledBackgroundColor:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.5),
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)

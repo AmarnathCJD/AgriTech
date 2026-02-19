@@ -707,7 +707,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       width: 140,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -735,28 +735,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: GoogleFonts.dmSans(
                         fontWeight: FontWeight.bold,
                         color: Colors.grey[800],
-                        height: 1.2,
-                        fontSize: 13)),
+                        height: 1.1,
+                        fontSize: 12)),
               ),
               const SizedBox(width: 4),
-              Icon(icon, color: color, size: 16),
+              Icon(icon, color: color, size: 14),
             ],
           ),
           Text(price,
               style: GoogleFonts.dmSans(
                   fontWeight: FontWeight.bold,
-                  fontSize: 20,
+                  fontSize: 18,
                   color: Colors.black87)),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               change,
               style: GoogleFonts.dmSans(
-                  color: color, fontSize: 12, fontWeight: FontWeight.w700),
+                  color: color, fontSize: 11, fontWeight: FontWeight.w700),
             ),
           ),
         ],

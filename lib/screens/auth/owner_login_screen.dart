@@ -66,12 +66,17 @@ class _OwnerLoginScreenState extends State<OwnerLoginScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5F2),
       appBar: AppBar(
-        title: Text("Owner Login",
-            style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.bold, color: Colors.black)),
-        backgroundColor: Colors.white,
+        title: Text(
+          "Owner Login",
+          style: GoogleFonts.playfairDisplay(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -109,7 +114,7 @@ class _OwnerLoginScreenState extends State<OwnerLoginScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _sendOTP,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),

@@ -142,14 +142,15 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
       appBar: AppBar(
         title: Text(
           "List My Equipment",
-          style: GoogleFonts.dmSans(
-            textStyle: const TextStyle(
-                fontWeight: FontWeight.bold, color: Colors.black),
+          style: GoogleFonts.playfairDisplay(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -290,7 +291,7 @@ class _AddEquipmentScreenState extends State<AddEquipmentScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitEquipment,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

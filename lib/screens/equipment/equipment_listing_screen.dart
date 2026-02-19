@@ -85,9 +85,16 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5F2),
       appBar: AppBar(
-        title: const Text("Equipment Rental"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          "Equipment Rental",
+          style: GoogleFonts.playfairDisplay(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
           IconButton(
@@ -100,6 +107,7 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
               );
             },
             tooltip: "My Bookings",
+            color: Colors.white,
           )
         ],
       ),
@@ -124,9 +132,9 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
             _navigateToAddEquipment();
           }
         },
-        label: const Text("Add My Equipment"),
-        icon: const Icon(Icons.add),
-        backgroundColor: Colors.brown,
+        label: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +156,7 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
                         max: 100,
                         divisions: 19,
                         label: "${_radius.toInt()} km",
-                        activeColor: Colors.brown,
+                        activeColor: Theme.of(context).colorScheme.primary,
                         onChanged: (value) {
                           setState(() => _radius = value);
                         },
@@ -173,11 +181,21 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
                               _fetchEquipment();
                             }
                           },
-                          selectedColor: Colors.brown[100],
-                          labelStyle: TextStyle(
+                          selectedColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
+                          labelStyle: GoogleFonts.dmSans(
                               color: isSelected
-                                  ? Colors.brown[800]
-                                  : Colors.black),
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.black,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal),
+                          side: BorderSide(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey.shade300),
                         ),
                       );
                     }).toList(),
@@ -332,14 +350,19 @@ class _EquipmentListingScreenState extends State<EquipmentListingScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.brown,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(8),
                             ),
+                            elevation: 0,
                           ),
-                          child: const Text("Book",
-                              style: TextStyle(fontSize: 12)),
+                          child: Text("Book Now",
+                              style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
                       ),
                     ],

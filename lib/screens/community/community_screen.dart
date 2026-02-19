@@ -26,7 +26,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPosts();
+    _loadPosts(); // Initial load
     _scrollController.addListener(_onScroll);
   }
 
@@ -46,6 +46,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _loadPosts({bool refresh = false}) async {
+    // 1. Check if we should use cached data (only for non-refresh and initial page)
+    // Cache check removed as it was blocking pagination requests.
+    // The _isLoading check below handles concurrent request prevention.
+
     if (_isLoading) return;
 
     setState(() {
@@ -64,21 +68,36 @@ class _CommunityScreenState extends State<CommunityScreen> {
         sortBy: _sortBy,
       );
 
-      setState(() {
-        if (newPosts.length < _limit) {
-          _hasMore = false;
-        }
-        _posts.addAll(newPosts);
-        _page++;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (newPosts.isEmpty || newPosts.length < _limit) {
+            _hasMore = false;
+          }
+
+          if (refresh) {
+            _posts = newPosts;
+          } else {
+            // Avoid duplicates
+            final existingIds = _posts.map((p) => p.id).toSet();
+            final uniqueNewPosts =
+                newPosts.where((p) => !existingIds.contains(p.id)).toList();
+            _posts.addAll(uniqueNewPosts);
+          }
+
+          _page++;
+          _isLoading = false;
+          // _lastFetchTime = DateTime.now(); removed
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load posts: $e')),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load posts: $e')),
+        );
+      }
     }
   }
 

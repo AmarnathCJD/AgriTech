@@ -2,61 +2,209 @@
     {
         "name": "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
         "url": "https://pmkisan.gov.in/",
-        "description": "Direct income support of ₹6,000 per year to farmer families."
+        "description": "Direct income support of ₹6,000 per year to farmer families.",
+        "benefits": [
+            "₹6,000 per year in 3 equal installments of ₹2,000 each.",
+            "Direct Benefit Transfer (DBT) directly to bank accounts.",
+            "Financial supplement for procuring agricultural inputs and domestic needs."
+        ],
+        "eligibility": [
+            "All landholding farmer families with cultivable land.",
+            "Excludes institutional landholders.",
+            "Excludes high economic status categories (Ministers, Mayors, etc.).",
+            "Excludes income tax payers."
+        ],
+        "documents": [
+            "Aadhaar Card",
+            "Land Ownership Documents (Khata/Khasra/Jamabandi)",
+            "Bank Account Details (Passbook)",
+            "Mobile Number linked with Aadhaar"
+        ],
+        "process": "Apply online via PM-KISAN portal (Farmer Corner > New Farmer Registration) or visit Common Service Centres (CSCs). e-KYC is mandatory."
     },
     {
         "name": "PMFBY (Pradhan Mantri Fasal Bima Yojana)",
         "url": "https://pmfby.gov.in/",
-        "description": "Crop insurance scheme for yield loss protection."
+        "description": "Comprehensive crop insurance scheme providing financial support to farmers suffering crop loss/damage.",
+        "benefits": [
+            "Insurance coverage against crop loss due to natural calamities, pests & diseases.",
+            "Stabilizes income and encourages innovative agricultural practices.",
+            "Low premium rates (1.5% for Rabi, 2% for Kharif, 5% for Horticulture) with government subsidy."
+        ],
+        "eligibility": [
+            "Farmers growing notified crops in notified areas.",
+            "Sharecroppers and tenant farmers are eligible.",
+            "Voluntary for all farmers (loanee and non-loanee)."
+        ],
+        "documents": [
+            "Land Possession Certificate (LPC) / Land Records",
+            "Bank Account Details",
+            "Aadhaar Card",
+            "Crop Sowing Declaration"
+        ],
+        "process": "Apply apply online via PMFBY portal or through banks/CSCs/Insurance Intermediaries within the cut-off date."
     },
     {
         "name": "Agriculture Infrastructure Fund (AIF)",
         "url": "http://agriinfra.dac.gov.in/",
-        "description": "Financing facility for post-harvest management infrastructure."
+        "description": "Financing facility for post-harvest management infrastructure.",
+        "benefits": [
+            "Loans with interest subvention of 3% per annum up to ₹2 Crore.",
+            "Credit guarantee coverage for loans up to ₹2 Crore.",
+            "Moratorium for repayment up to 2 years."
+        ],
+        "eligibility": [
+            "Primary Agricultural Credit Societies (PACS)",
+            "Marketing Cooperative Societies",
+            "Farmer Producer Organizations (FPOs)",
+            "Self Help Groups (SHGs)",
+            "Farmers",
+            "Agri-entrepreneurs",
+            "Startups"
+        ],
+        "documents": [
+            "DPR (Detailed Project Report)",
+            "Land Documents",
+            "KYC Documents",
+            "Bank Loan Application"
+        ],
+        "process": "Register and apply on the National Agriculture Infra Financing Facility (NAIFF) portal."
     },
     {
         "name": "e-NAM (National Agriculture Market)",
         "url": "https://enam.gov.in/",
-        "description": "Pan-India electronic trading portal for farm produce."
+        "description": "Pan-India electronic trading portal for farm produce.",
+        "benefits": [
+            "Unified market for agricultural commodities.",
+            "Better price discovery through transparent online bidding.",
+            "Real-time payments to farmers.",
+            "Access to more buyers/traders."
+        ],
+        "eligibility": [
+            "Farmers with valid bank account and mobile number.",
+            "Must be registered with APMC."
+        ],
+        "documents": [
+            "Bank Passbook",
+            "Aadhaar Card",
+            "Mobile Number"
+        ],
+        "process": "Register via e-NAM portal or mobile app, or visit the nearest Mandi registration counter."
     },
     {
         "name": "Soil Health Card Scheme",
         "url": "https://soilhealth.dac.gov.in/",
-        "description": "Crop-wise fertilizer recommendations for better yields."
+        "description": "Crop-wise fertilizer recommendations for better yields.",
+        "benefits": [
+            "Information on soil nutrient status (12 parameters).",
+            "Fertilizer dosage recommendations for specific crops.",
+            "Improves soil health and reduces cultivation cost."
+        ],
+        "eligibility": [
+            "All farmers are eligible."
+        ],
+        "documents": [
+            "Aadhaar Card",
+            "Land details",
+            "Mobile Number"
+        ],
+        "process": "Soil samples collected by State Government officials. Cards distributed to farmers based on test results."
     },
     {
         "name": "PMKSY (Pradhan Mantri Krishi Sinchayee Yojana)",
         "url": "https://pmksy.gov.in/",
-        "description": "Irrigation coverage to improve water use efficiency."
+        "description": "Irrigation coverage to improve water use efficiency ('Per Drop More Crop').",
+        "benefits": [
+            "Subsidy on micro-irrigation systems (Drip/Sprinkler).",
+            "Assured irrigation (Har Khet Ko Pani).",
+            "Improved water use efficiency."
+        ],
+        "eligibility": [
+            "Farmers with land ownership and water source availability.",
+            "Members of Water User Associations."
+        ],
+        "documents": [
+            "Aadhaar Card",
+            "Land Records (RoR)",
+            "Bank Passbook"
+        ],
+        "process": "Apply through the state agriculture/horticulture department website or local office."
     },
     {
         "name": "Kisan Credit Card (KCC)",
         "url": "https://mkisan.gov.in/Home/KCCDashboard",
-        "description": "Credit support to farmers for cultivation and other needs."
+        "description": "Credit support to farmers for cultivation and other needs.",
+        "benefits": [
+            "Short-term credit for crop cultivation.",
+            "Flexible repayment schedule.",
+            "Crop insurance coverage.",
+            "ATM-enabled RuPay Debit Card."
+        ],
+        "eligibility": [
+            "All farmers (Owner cultivators, Tenant farmers, Sharecroppers).",
+            "SHGs or Joint Liability Groups."
+        ],
+        "documents": [
+            "Application Form",
+            "Identity Proof (Aadhaar/Voter ID)",
+            "Address Proof",
+            "Land Records"
+        ],
+        "process": "Visit the nearest bank branch to apply or apply online via bank websites."
     },
     {
         "name": "Jaivik Kheti (Organic Farming)",
         "url": "https://pgsindia-ncof.gov.in/home.aspx",
-        "description": "Promotion of organic farming and certification."
+        "description": "Promotion of organic farming and certification.",
+        "benefits": [
+            "Financial assistance for organic inputs.",
+            "PGS Certification support.",
+            "Marketing support for organic produce."
+        ],
+        "eligibility": [
+            "Farmers willing to adopt organic farming in clusters (PKVY)."
+        ],
+        "documents": [
+            "Aadhaar Card",
+            "Land Documents",
+            "Bank Details"
+        ],
+        "process": "Register under PKVY scheme through Regional Councils or State Department of Agriculture."
     },
     {
         "name": "ATMA (Agricultural Technology Management Agency)",
         "url": "https://extensionreforms.da.gov.in/",
-        "description": "Decentralized agricultural extension system."
+        "description": "Decentralized agricultural extension system.",
+        "benefits": [
+            "Latest agricultural technology dissemination.",
+            "Training and exposure visits for farmers.",
+            "Farm schools and demonstrations."
+        ],
+        "eligibility": [
+            "All farmers interested in new technologies."
+        ],
+        "documents": [
+            "Identity Proof"
+        ],
+        "process": "Contact local Block Technology Manager or Agriculture Dept office."
     },
     {
         "name": "MIDH (Integrated Development of Horticulture)",
         "url": "http://midh.gov.in/",
-        "description": "Holistic growth of the horticulture sector."
-    },
-    {
-        "name": "Agmarknet",
-        "url": "http://agmarknet.gov.in/",
-        "description": "Agricultural marketing information network."
-    },
-    {
-        "name": "DBT in Agriculture",
-        "url": "https://www.dbtdacfw.gov.in/",
-        "description": "Direct Benefit Transfer portal for agricultural schemes."
+        "description": "Holistic growth of the horticulture sector.",
+        "benefits": [
+            "Subsidy for setting up new orchards/gardens.",
+            "Support for Polyhouses and Greenhouses.",
+            "Cold storage and post-harvest management support."
+        ],
+        "eligibility": [
+            "Farmers, FPOs, SHGs involved in horticulture."
+        ],
+        "documents": [
+            "Land Records",
+            "Project Report (for infrastructure)",
+            "Aadhaar Card"
+        ],
+        "process": "Apply to State Horticulture Mission or National Horticulture Board."
     }
 ]

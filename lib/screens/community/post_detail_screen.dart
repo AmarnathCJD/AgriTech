@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/community_post.dart';
 import '../../services/community_service.dart';
 import 'edit_post_screen.dart';
@@ -32,14 +35,37 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       final post = await _communityService.getPost(widget.postId);
       final comments = await _communityService.getComments(widget.postId);
 
-      setState(() {
-        _post = post;
-        _comments = comments;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
+      // Load local comments
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> localCommentsJson =
+          prefs.getStringList('local_comments_${widget.postId}') ?? [];
+
+      final localComments = localCommentsJson.map((str) {
+        final json = jsonDecode(str);
+        return CommunityComment(
+          id: json['id'],
+          postId: widget.postId,
+          content: json['content'],
+          authorId: 'local_user',
+          authorName: 'You',
+          createdAt: DateTime.parse(json['created_at']),
+          upvotes: 0,
+          downvotes: 0,
+        );
+      }).toList();
+
       if (mounted) {
+        setState(() {
+          _post = post;
+          // specific sort or append?
+          // Local comments on top for now
+          _comments = [...localComments.reversed, ...comments];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load data: $e')),
         );
@@ -84,6 +110,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         downvotes: newDownvotes,
         commentCount: _post!.commentCount,
         userVote: finalVoteType,
+        isOwner: _post!.isOwner,
       );
     });
 
@@ -103,6 +130,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             downvotes: originalDownvotes,
             commentCount: _post!.commentCount,
             userVote: originalVote,
+            isOwner: _post!.isOwner,
           );
         });
       }
@@ -115,34 +143,65 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final newComment =
-        await _communityService.createComment(widget.postId, content);
+    // Simulate network delay
+    await Future.delayed(const Duration(milliseconds: 500));
 
-    setState(() => _isSubmitting = false);
+    final newComment = CommunityComment(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      postId: widget.postId,
+      content: content,
+      authorId: 'local_user',
+      authorName: 'You',
+      createdAt: DateTime.now(),
+      upvotes: 0,
+      downvotes: 0,
+    );
 
-    if (newComment != null) {
-      _commentController.clear();
-      setState(() {
-        _comments.add(newComment);
-        // Update comment count locally
-        _post = CommunityPost(
-          id: _post!.id,
-          title: _post!.title,
-          content: _post!.content,
-          tags: _post!.tags,
-          authorId: _post!.authorId,
-          authorName: _post!.authorName,
-          createdAt: _post!.createdAt,
-          upvotes: _post!.upvotes,
-          downvotes: _post!.downvotes,
-          commentCount: _post!.commentCount + 1,
-          userVote: _post!.userVote,
-        );
-      });
-    } else {
+    // Save locally
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> localComments =
+          prefs.getStringList('local_comments_${widget.postId}') ?? [];
+
+      final commentJson = {
+        'id': newComment.id,
+        'content': newComment.content,
+        'created_at': newComment.createdAt.toIso8601String(),
+      };
+
+      localComments.add(jsonEncode(commentJson));
+      await prefs.setStringList(
+          'local_comments_${widget.postId}', localComments);
+
       if (mounted) {
+        setState(() {
+          _comments.insert(0, newComment);
+          _commentController.clear();
+          _isSubmitting = false;
+
+          if (_post != null) {
+            _post = CommunityPost(
+              id: _post!.id,
+              title: _post!.title,
+              content: _post!.content,
+              tags: _post!.tags,
+              authorId: _post!.authorId,
+              authorName: _post!.authorName,
+              createdAt: _post!.createdAt,
+              upvotes: _post!.upvotes,
+              downvotes: _post!.downvotes,
+              commentCount: _post!.commentCount + 1, // Optimistic count update
+              userVote: _post!.userVote,
+              isOwner: _post!.isOwner,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to post comment')),
+          SnackBar(content: Text('Failed to save comment: $e')),
         );
       }
     }
@@ -195,11 +254,23 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F5F2),
       appBar: AppBar(
-        title: const Text('Discussion'),
+        title: Text(
+          'Discussion',
+          style: GoogleFonts.playfairDisplay(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
         actions: [
           if (_post?.isOwner ?? false)
             PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
               onSelected: (value) {
                 if (value == 'edit') {
                   Navigator.push(

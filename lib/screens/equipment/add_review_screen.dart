@@ -57,9 +57,16 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Write Review"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          "Write Review",
+          style: GoogleFonts.playfairDisplay(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -129,7 +136,7 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submitReview,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)

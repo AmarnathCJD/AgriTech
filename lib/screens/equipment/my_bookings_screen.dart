@@ -46,15 +46,25 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F5F2),
         appBar: AppBar(
-          title: const Text("My Activity"),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          title: Text(
+            "My Activity",
+            style: GoogleFonts.playfairDisplay(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          iconTheme: const IconThemeData(color: Colors.white),
           elevation: 0,
-          bottom: const TabBar(
-            labelColor: Colors.brown,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.brown,
-            tabs: [
+          bottom: TabBar(
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withOpacity(0.6),
+            indicatorColor: Colors.white,
+            indicatorWeight: 3,
+            labelStyle: GoogleFonts.dmSans(fontWeight: FontWeight.bold),
+            unselectedLabelStyle: GoogleFonts.dmSans(),
+            tabs: const [
               Tab(text: "Rentals"),
               Tab(text: "Listings"),
               Tab(text: "Requests"),
@@ -101,7 +111,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                         })),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white),
             child: const Text("Owner Login"),
           )
         ],
